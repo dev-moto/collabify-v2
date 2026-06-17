@@ -1,0 +1,1 @@
+Generate React, Redux Toolkit, Tailwind, Lucide structure and pages.

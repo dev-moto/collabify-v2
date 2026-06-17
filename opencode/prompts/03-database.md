@@ -1,0 +1,1 @@
+Generate PostgreSQL schema, migrations, indexes, and RLS policies.

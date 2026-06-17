@@ -1,0 +1,1 @@
+Design React + Supabase architecture with RLS and scalability.
