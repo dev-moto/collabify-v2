@@ -1,0 +1,21 @@
+name: Security Issue
+description: Report a non-sensitive security concern. Do not paste secrets.
+title: "[Security]: "
+labels: ["type: security", "priority: high"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste secrets, private keys, access tokens, or private user data.
+  - type: textarea
+    id: issue
+    attributes:
+      label: Security Concern
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+    validations:
+      required: true

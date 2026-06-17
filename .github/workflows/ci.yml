@@ -1,2 +1,61 @@
 name: CI
-on: [push]
+
+on:
+  pull_request:
+  push:
+    branches: ["main", "develop"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f frontend/package-lock.json ]; then
+            cd frontend
+            npm ci
+          elif [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No package-lock.json found yet. Skipping install."
+          fi
+
+      - name: Lint
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend; fi
+          npm run lint --if-present
+
+      - name: Typecheck
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend; fi
+          npm run typecheck --if-present
+
+      - name: Test
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend; fi
+          npm test --if-present -- --run
+
+      - name: Build
+        run: |
+          if [ -f frontend/package.json ]; then cd frontend; fi
+          npm run build --if-present

@@ -1,0 +1,46 @@
+name: Security Checks
+
+on:
+  pull_request:
+  push:
+    branches: ["main", "develop"]
+  schedule:
+    - cron: "0 18 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: NPM dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Audit dependencies
+        run: |
+          set -e
+          if [ -f frontend/package-lock.json ]; then
+            cd frontend
+            npm audit --audit-level=high
+          elif [ -f package-lock.json ]; then
+            npm audit --audit-level=high
+          else
+            echo "No npm lockfile found. Skipping npm audit."
+          fi
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3

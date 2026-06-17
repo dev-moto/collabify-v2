@@ -1,0 +1,13 @@
+title,labels,body
+Set up React Vite Tailwind Redux frontend shell,"type: feature;frontend;ready-for-dev","Create React app shell with routes layouts Redux and Tailwind."
+Set up Supabase project schema and RLS baseline,"type: feature;supabase;needs-security-review","Create schema RLS storage policies and audit log baseline."
+Build auth and role onboarding,"type: feature;frontend;supabase;needs-security-review","Implement creator/business onboarding and protected routes."
+Create creator profile and social showcase,"type: feature;frontend;supabase","Creator profiles social links stats portfolio and availability."
+Create business profile and verification workflow,"type: feature;frontend;supabase;type: compliance;needs-security-review","Private document upload admin review and business profile."
+Build location-based discovery MVP,"type: feature;frontend;supabase;needs-security-review","Approximate location search without exposing exact coordinates."
+Build appointments MVP,"type: feature;frontend;supabase","Meeting request accept decline reschedule cancel reminders."
+Build realtime messaging MVP,"type: feature;frontend;supabase;needs-security-review","Participant-only conversations messages attachments and realtime."
+Build campaigns and x-deals MVP,"type: feature;frontend;supabase","Offers deliverables statuses notes x-deals and paid campaigns."
+Create monetization plan and subscription gates,"type: feature","Plan tiers feature gates billing and commission."
+Create admin moderation and audit logs,"type: feature;supabase;needs-security-review","Reports verification suspicious accounts and audit actions."
+Security hardening before beta,"type: security;needs-security-review","RLS audit storage audit dependency audit secret scanning and rate limits."

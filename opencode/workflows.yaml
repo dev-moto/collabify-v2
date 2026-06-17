@@ -1,7 +1,0 @@
-stages:
-  - planning
-  - architecture
-  - database
-  - frontend
-  - testing
-  - deployment

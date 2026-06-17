@@ -1,0 +1,45 @@
+name: Auto Branch From Ready Issue
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  create-branch:
+    name: Create linked development branch
+    if: github.event.label.name == 'ready-for-dev'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create branch linked to issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          BASE_BRANCH: main
+        run: |
+          set -euo pipefail
+
+          slug="$(echo "$ISSUE_TITLE"             | tr '[:upper:]' '[:lower:]'             | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g'             | cut -c1-50)"
+
+          if [ -z "$slug" ]; then
+            slug="work"
+          fi
+
+          branch="issue-${ISSUE_NUMBER}-${slug}"
+
+          echo "Checking linked branches for issue #$ISSUE_NUMBER..."
+          if gh issue develop "$ISSUE_NUMBER" --repo "$REPO" --list | grep -q "$branch"; then
+            echo "Branch already exists: $branch"
+            exit 0
+          fi
+
+          echo "Creating branch: $branch"
+          gh issue develop "$ISSUE_NUMBER"             --repo "$REPO"             --base "$BASE_BRANCH"             --name "$branch"
+
+          gh issue comment "$ISSUE_NUMBER"             --repo "$REPO"             --body "Created linked development branch: \`$branch\`"

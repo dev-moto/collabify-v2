@@ -1,8 +1,0 @@
-agents:
-  planner: gemma3
-  architect: qwen3
-  frontend: qwen3-coder
-  security: qwen3
-  testing: qwen2.5-coder
-  docs: gemma3
-  debugger: deepseek-r1
