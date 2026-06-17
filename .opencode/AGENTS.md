@@ -1,37 +1,23 @@
 # Collabify Agent Rules
 
-Collabify is a Philippines-only creator/business collaboration platform.
+Collabify is a Philippines-only platform connecting content creators/vloggers and businesses/brands for collaborations, x-deals, paid campaigns, appointments, messaging, calls, and future mobile support.
 
-## Stack
-
-Frontend:
-- React JS with Vite
+Stack:
+- React JS + Vite
 - TailwindCSS
 - lucide-react
 - react-redux / Redux Toolkit
 - React Router
-- Supabase JS client
+- Supabase Auth/Postgres/Storage/Realtime/Edge Functions
 
-Backend:
-- Supabase Auth
-- Supabase PostgreSQL
-- Supabase Storage
-- Supabase Realtime
-- Supabase Edge Functions
-
-## Hard Rules
-
-1. No frontend-only authorization.
-2. Every sensitive table must have RLS enabled.
+Hard rules:
+1. Never rely on frontend-only authorization.
+2. Every sensitive table must have RLS.
 3. Every storage bucket must have explicit policies.
-4. Never expose Supabase service role key to React.
-5. Every private query must be backed by an RLS policy.
-6. Every collaboration, appointment, campaign, and message must check participant access.
-7. Every business verification file must be private by default.
-8. Sensitive location data must be approximate unless exact location is strictly needed.
-9. PH-only access must be layered; do not claim 100% VPN blocking.
-10. OpenCode must not run destructive bash commands without explicit approval.
-
-## AI-DLC Flow
-
-PRD → Threat Model → User Stories → Schema → RLS → UI → Tests → Security Review → Release.
+4. Never expose Supabase service role keys to React.
+5. Admin role must not be assignable from frontend.
+6. Verification files are private.
+7. Messages, appointments, campaigns, offers, and contracts are participant-only.
+8. Exact location data is private.
+9. PH-only access must use layered controls and never claim perfect VPN blocking.
+10. Sensitive changes must write audit logs.

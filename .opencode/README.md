@@ -1,18 +1,22 @@
-# Collabify Hardened OpenCode Package
+# Collabify OpenCode Zen/Freemium Configs
 
-Copy `.opencode` into your Collabify repo root.
+This package removes Ollama completely.
 
-Recommended local Ollama models:
-- `qwen3-coder:30b` for React coding
-- `qwen3` for architecture/security/Supabase
-- `qwen2.5-coder` for tests
-- `gemma3` for planning/docs/monetization
-- `deepseek-r1` for debugging
+Default model IDs:
+- `opencode/gpt-5.1-codex`
+- `opencode/gpt-5`
+
+Setup:
+1. Run `opencode`
+2. Run `/connect`
+3. Choose `OpenCode Zen` or `OpenCode Go`
+4. Paste your OpenCode API key
+5. Run `/models`
+6. If your account shows different model IDs, replace the model IDs in `opencode.json`
 
 Security posture:
-- OpenCode edit and bash operations require approval by default.
+- `.env`, private keys, service-role secrets are denied.
 - External directory access is denied.
-- Security agent is read-only.
-- Project rules reject frontend-only authorization.
-- Supabase service role keys are forbidden in frontend code.
-- GitHub Actions use explicit least-privilege permissions.
+- Destructive bash commands are denied.
+- Planning and security agents are read-only.
+- Build agents ask before edit/bash.

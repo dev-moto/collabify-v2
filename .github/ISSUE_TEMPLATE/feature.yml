@@ -7,27 +7,12 @@ body:
     id: summary
     attributes:
       label: Summary
-      description: What should be built?
-    validations:
-      required: true
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      options:
-        - frontend
-        - supabase
-        - security
-        - compliance
-        - monetization
-        - github-automation
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: Use checklist format.
       value: |
         - [ ] 
         - [ ] 
@@ -37,4 +22,3 @@ body:
     id: security
     attributes:
       label: Security / Privacy Notes
-      description: What RLS, permissions, privacy, or abuse risks apply?

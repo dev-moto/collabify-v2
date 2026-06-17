@@ -1,25 +1,15 @@
 # Collabify Context
 
-Collabify connects creators/vloggers with brands/businesses in the Philippines.
-
-Creators can:
-- Build creator profile and showcase
-- Add social media links and stats
-- Search nearby businesses
-- Manage appointments
-- Chat and eventually call/video-call
-- Accept campaigns, x-deals, and paid collaborations
-
-Businesses can:
-- Build verified business profile
-- Search nearby creators
-- View creator profiles and social stats
-- Schedule meetings
-- Manage campaigns and collaboration offers
-
-Admins can:
-- Moderate users
-- Review business verification
-- Review reports
-- Manage subscriptions
-- View audit logs
+MVP:
+1. Auth and role onboarding
+2. Creator profiles
+3. Business profiles
+4. Manual social stats
+5. Location-based discovery
+6. Appointments
+7. Realtime messaging
+8. Campaigns/x-deals
+9. Monetization gates
+10. Admin moderation
+11. Consent/audit logs
+12. PH-only layered access

@@ -1,24 +1,7 @@
 # Philippines Compliance Rules
 
-Collabify should align with Philippine privacy and cyber safety expectations.
+Build privacy notice, terms acceptance, consent records, data access/correction/deletion workflows, retention policy, breach response checklist, audit logs, purpose limitation, and business verification.
 
-Build:
-- Privacy notice acceptance
-- Terms acceptance
-- Consent records
-- Data access request workflow
-- Data correction request workflow
-- Data deletion/deactivation request workflow
-- Data retention policy
-- Breach response checklist
-- Audit logs
-- Purpose limitation for collected data
-- Business verification workflow
-- Admin access logging
+Sensitive data includes verification documents, exact location, payment identifiers, private messages, personal contact info, and call/video metadata.
 
-Treat these as sensitive:
-- Government/business verification documents
-- Exact location data
-- Payment identifiers
-- Private messages and call metadata
-- Personal contact info
+PH-only access should use GeoIP allowlist, PH mobile verification, business verification, VPN/datacenter/Tor risk scoring, PH billing signals, and account risk scoring. Do not promise perfect VPN blocking.

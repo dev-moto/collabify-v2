@@ -12,5 +12,3 @@ Closes #
 - [ ] User input validated
 - [ ] No private fields exposed
 - [ ] Tests added/updated
-
-## Screenshots / Notes

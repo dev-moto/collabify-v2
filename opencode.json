@@ -1,0 +1,225 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/gpt-5.1-codex",
+  "small_model": "opencode/gpt-5.1-codex",
+  "share": "manual",
+  "autoupdate": true,
+  "provider": {
+    "opencode": {
+      "options": {
+        "timeout": 600000,
+        "chunkTimeout": 30000
+      },
+      "models": {
+        "gpt-5.1-codex": {
+          "options": {
+            "reasoningEffort": "medium",
+            "textVerbosity": "low",
+            "reasoningSummary": "auto"
+          }
+        },
+        "gpt-5": {
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            }
+          }
+        }
+      }
+    }
+  },
+  "permission": {
+    "*": "ask",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "*.env.example": "allow",
+      "**/*.pem": "deny",
+      "**/*.key": "deny",
+      "**/*service-role*": "deny",
+      "**/*supabase*secret*": "deny"
+    },
+    "glob": "allow",
+    "grep": "allow",
+    "lsp": "allow",
+    "question": "allow",
+    "task": "ask",
+    "webfetch": "ask",
+    "websearch": "ask",
+    "external_directory": "deny",
+    "doom_loop": "ask",
+    "skill": {
+      "*": "allow",
+      "experimental-*": "ask"
+    },
+    "edit": {
+      "*": "ask",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/*.pem": "deny",
+      "**/*.key": "deny",
+      "**/*service-role*": "deny",
+      "**/*supabase*secret*": "deny"
+    },
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "npm run lint*": "allow",
+      "npm run test*": "allow",
+      "npm test*": "allow",
+      "npm run build*": "allow",
+      "npm run typecheck*": "allow",
+      "npx vitest*": "allow",
+      "npx eslint*": "allow",
+      "gh issue list*": "allow",
+      "gh issue view*": "allow",
+      "gh pr list*": "allow",
+      "gh pr view*": "allow",
+      "gh issue create*": "ask",
+      "gh issue develop*": "ask",
+      "gh label create*": "ask",
+      "supabase status*": "allow",
+      "supabase db diff*": "ask",
+      "supabase db push*": "ask",
+      "rm *": "deny",
+      "rm -rf *": "deny",
+      "sudo *": "deny",
+      "chmod 777 *": "deny",
+      "curl *|sh": "deny",
+      "wget *|sh": "deny",
+      "git push --force*": "deny"
+    }
+  },
+  "agent": {
+    "build": {
+      "mode": "primary",
+      "description": "Main implementation agent for Collabify web app.",
+      "model": "opencode/gpt-5.1-codex",
+      "temperature": 0.2,
+      "prompt": "{file:.opencode/prompts/build.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "external_directory": "deny"
+      }
+    },
+    "plan": {
+      "mode": "primary",
+      "description": "Planning and analysis agent. No direct code changes.",
+      "model": "opencode/gpt-5",
+      "temperature": 0.1,
+      "prompt": "{file:.opencode/prompts/plan.md}",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "external_directory": "deny"
+      }
+    },
+    "architect": {
+      "mode": "subagent",
+      "description": "Supabase schema, RLS, storage policies, realtime, edge functions, and scalable architecture.",
+      "model": "opencode/gpt-5",
+      "temperature": 0.1,
+      "prompt": "{file:.opencode/prompts/architect.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "external_directory": "deny"
+      }
+    },
+    "security": {
+      "mode": "subagent",
+      "description": "Strict security, privacy, RLS, GitHub Actions, and Philippine compliance auditor.",
+      "model": "opencode/gpt-5",
+      "temperature": 0.0,
+      "prompt": "{file:.opencode/prompts/security.md}",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "external_directory": "deny"
+      }
+    },
+    "frontend": {
+      "mode": "subagent",
+      "description": "React JS, Vite, TailwindCSS, lucide-react, Redux Toolkit, React Router, and Supabase client.",
+      "model": "opencode/gpt-5.1-codex",
+      "temperature": 0.2,
+      "prompt": "{file:.opencode/prompts/frontend.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "external_directory": "deny"
+      }
+    },
+    "testing": {
+      "mode": "subagent",
+      "description": "Unit, integration, E2E, RLS, storage policy, regression, and UAT testing.",
+      "model": "opencode/gpt-5.1-codex",
+      "temperature": 0.1,
+      "prompt": "{file:.opencode/prompts/testing.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "external_directory": "deny"
+      }
+    },
+    "monetization": {
+      "mode": "subagent",
+      "description": "Creator/business subscriptions, x-deal monetization, campaign fees, and pricing experiments.",
+      "model": "opencode/gpt-5",
+      "temperature": 0.2,
+      "prompt": "{file:.opencode/prompts/monetization.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "deny",
+        "external_directory": "deny"
+      }
+    }
+  },
+  "command": {
+    "start-collabify": {
+      "description": "Start the full Collabify AI-DLC from planning to release.",
+      "agent": "plan",
+      "template": "Use .opencode/prompts/00-start-project.md. Build the planning foundation, issue plan, Supabase security architecture, frontend architecture, and release path before implementation."
+    },
+    "security-review": {
+      "description": "Run strict security and compliance review.",
+      "agent": "security",
+      "template": "Review this repo against .opencode/rules/security-hardening.md, .opencode/rules/supabase-rules.md, .opencode/rules/github-security-rules.md, and .opencode/rules/philippines-compliance.md."
+    },
+    "supabase-plan": {
+      "description": "Generate secure Supabase plan and migrations.",
+      "agent": "architect",
+      "template": "Use .opencode/prompts/02-supabase-secure-schema.md."
+    },
+    "build-frontend": {
+      "description": "Build React frontend.",
+      "agent": "frontend",
+      "template": "Build Collabify frontend using React JS, Vite, TailwindCSS, lucide-react, react-redux, React Router, and Supabase client."
+    },
+    "github-automation": {
+      "description": "Prepare GitHub tickets, branches, labels, and workflows.",
+      "agent": "plan",
+      "template": "Use docs/github-automation.md and scripts/github/bootstrap-collabify.sh."
+    }
+  }
+}

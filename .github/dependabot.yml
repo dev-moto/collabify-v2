@@ -5,15 +5,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    labels:
-      - "security"
-      - "dependencies"
-
+    labels: ["security", "dependencies"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    labels:
-      - "security"
-      - "github-actions"
+    labels: ["security", "github-actions"]
