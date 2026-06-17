@@ -1,45 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/gpt-5.1-codex",
-  "small_model": "opencode/gpt-5.1-codex",
+  "model": "openai/gpt-5.5",
+  "small_model": "openai/gpt-5.4",
   "share": "manual",
   "autoupdate": true,
-  "provider": {
-    "opencode": {
-      "options": {
-        "timeout": 600000,
-        "chunkTimeout": 30000
-      },
-      "models": {
-        "gpt-5.1-codex": {
-          "options": {
-            "reasoningEffort": "medium",
-            "textVerbosity": "low",
-            "reasoningSummary": "auto"
-          }
-        },
-        "gpt-5": {
-          "variants": {
-            "low": {
-              "reasoningEffort": "low",
-              "textVerbosity": "low",
-              "reasoningSummary": "auto"
-            },
-            "medium": {
-              "reasoningEffort": "medium",
-              "textVerbosity": "low",
-              "reasoningSummary": "auto"
-            },
-            "high": {
-              "reasoningEffort": "high",
-              "textVerbosity": "low",
-              "reasoningSummary": "auto"
-            }
-          }
-        }
-      }
-    }
-  },
   "permission": {
     "*": "ask",
     "read": {
@@ -113,7 +77,7 @@
     "build": {
       "mode": "primary",
       "description": "Main implementation agent for Collabify web app.",
-      "model": "opencode/gpt-5.1-codex",
+      "model": "openai/gpt-5.5",
       "temperature": 0.2,
       "prompt": "{file:.opencode/prompts/build.md}",
       "permission": {
@@ -125,7 +89,7 @@
     "plan": {
       "mode": "primary",
       "description": "Planning and analysis agent. No direct code changes.",
-      "model": "opencode/gpt-5",
+      "model": "openai/gpt-5.4",
       "temperature": 0.1,
       "prompt": "{file:.opencode/prompts/plan.md}",
       "permission": {
@@ -137,7 +101,7 @@
     "architect": {
       "mode": "subagent",
       "description": "Supabase schema, RLS, storage policies, realtime, edge functions, and scalable architecture.",
-      "model": "opencode/gpt-5",
+      "model": "openai/gpt-5.5",
       "temperature": 0.1,
       "prompt": "{file:.opencode/prompts/architect.md}",
       "permission": {
@@ -149,8 +113,8 @@
     "security": {
       "mode": "subagent",
       "description": "Strict security, privacy, RLS, GitHub Actions, and Philippine compliance auditor.",
-      "model": "opencode/gpt-5",
-      "temperature": 0.0,
+      "model": "openai/gpt-5.5",
+      "temperature": 0,
       "prompt": "{file:.opencode/prompts/security.md}",
       "permission": {
         "edit": "deny",
@@ -160,8 +124,8 @@
     },
     "frontend": {
       "mode": "subagent",
-      "description": "React JS, Vite, TailwindCSS, lucide-react, Redux Toolkit, React Router, and Supabase client.",
-      "model": "opencode/gpt-5.1-codex",
+      "description": "React JS, Vite, TailwindCSS, lucide-react, Redux Toolkit, React Router, and Supabase client implementation.",
+      "model": "openai/gpt-5.5",
       "temperature": 0.2,
       "prompt": "{file:.opencode/prompts/frontend.md}",
       "permission": {
@@ -173,7 +137,7 @@
     "testing": {
       "mode": "subagent",
       "description": "Unit, integration, E2E, RLS, storage policy, regression, and UAT testing.",
-      "model": "opencode/gpt-5.1-codex",
+      "model": "openai/gpt-5.4",
       "temperature": 0.1,
       "prompt": "{file:.opencode/prompts/testing.md}",
       "permission": {
@@ -185,7 +149,7 @@
     "monetization": {
       "mode": "subagent",
       "description": "Creator/business subscriptions, x-deal monetization, campaign fees, and pricing experiments.",
-      "model": "opencode/gpt-5",
+      "model": "openai/gpt-5.4",
       "temperature": 0.2,
       "prompt": "{file:.opencode/prompts/monetization.md}",
       "permission": {
