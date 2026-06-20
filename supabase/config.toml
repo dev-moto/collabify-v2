@@ -1,0 +1,22 @@
+# Collabify local Supabase configuration placeholder.
+# Run `supabase init` to generate the full local config when the project is ready
+# to connect to a Supabase project.
+
+project_id = "collabify-v2"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+
+[storage]
+enabled = true

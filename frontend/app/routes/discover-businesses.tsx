@@ -1,0 +1,6 @@
+import { Link } from "react-router";
+import { Badge, Button, Card, SearchBox, VerifiedMark } from "~/components/ui";
+import { businesses } from "~/data/mock";
+
+export function meta() { return [{ title: "Discover businesses | Collabify" }]; }
+export default function DiscoverBusinesses() { return <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950 dark:bg-slate-950 dark:text-white"><div className="mx-auto max-w-7xl"><h1 className="text-3xl font-black">Discover businesses</h1><p className="mt-2 text-slate-600 dark:text-slate-300">Review brands and businesses interested in creator collaborations.</p><div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto]"><SearchBox placeholder="Search businesses or industries" /><Button type="button">Search</Button></div><div className="mt-6 grid gap-5 md:grid-cols-3">{businesses.map((b) => <Card key={b.id}><div className="flex items-center justify-between gap-3"><Badge tone="cyan">{b.industry}</Badge>{b.verified ? <VerifiedMark /> : <Badge tone="amber">Pending</Badge>}</div><h2 className="mt-4 text-xl font-black">{b.name}</h2><p className="text-sm text-slate-600 dark:text-slate-300">{b.city} area</p><p className="mt-3 text-sm">{b.bio}</p><Link className="mt-5 inline-flex font-bold text-cyan-700" to={`/businesses/${b.id}`}>View profile</Link></Card>)}</div></div></main>; }
