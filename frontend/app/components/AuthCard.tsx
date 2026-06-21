@@ -1,6 +1,6 @@
-import { Link } from "react-router";
-import { Sparkles } from "lucide-react";
 import type { InputHTMLAttributes, ReactNode } from "react";
+
+import { BrandLogo } from "./BrandLogo";
 
 export function AuthCard({
   title,
@@ -16,12 +16,9 @@ export function AuthCard({
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md flex-col justify-center">
-        <Link to="/" className="mb-8 flex items-center justify-center gap-2 font-semibold">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-violet-600 text-white shadow-lg shadow-cyan-500/20">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <span>Collabify</span>
-        </Link>
+        <div className="mb-8 flex justify-center">
+          <BrandLogo />
+        </div>
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-950/5 dark:border-white/10 dark:bg-white/5">
           <h1 className="text-3xl font-black tracking-tight">{title}</h1>
