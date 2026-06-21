@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { AppShell, Badge, Button, Card, ProtectedRoute, SearchBox, StatusPanel, VerifiedMark } from "~/components/ui";
 import { useAppSelector } from "~/store/hooks";
-import { listBusinessCards, type BusinessCard } from "~/services/discoverService";
+import { listBusinessCards, listBusinessCities, type BusinessCard } from "~/services/discoverService";
 
 export function meta() {
   return [{ title: "Discover businesses | Collabify" }];
 }
 
 type Status = "loading" | "ready" | "error";
-type Filters = { query: string };
+type Filters = { city: string; industry: string; query: string };
 
 export default function DiscoverBusinesses() {
   const sessionStatus = useAppSelector((state) => state.session.status);
@@ -18,10 +18,11 @@ export default function DiscoverBusinesses() {
   const role = profile?.role === "creator" ? "creator" : "business";
 
   const [cards, setCards] = useState<BusinessCard[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  const [query, setQuery] = useState("");
-  const [appliedQuery, setAppliedQuery] = useState("");
+  const [filters, setFilters] = useState<Filters>({ city: "", industry: "", query: "" });
+  const [applied, setApplied] = useState<Filters>({ city: "", industry: "", query: "" });
 
   useEffect(() => {
     if (sessionStatus !== "authenticated" || profileStatus !== "ready" || profile?.role !== "creator") return;
@@ -31,11 +32,17 @@ export default function DiscoverBusinesses() {
     async function load() {
       setStatus("loading");
       try {
-        const businessCards = await listBusinessCards({
-          query: appliedQuery || undefined,
-        });
+        const [businessCards, availableCities] = await Promise.all([
+          listBusinessCards({
+            city: applied.city || undefined,
+            industry: applied.industry || undefined,
+            query: applied.query || undefined,
+          }),
+          listBusinessCities(),
+        ]);
         if (!cancelled) {
           setCards(businessCards);
+          setCities(availableCities);
           setStatus("ready");
         }
       } catch (error) {
@@ -48,19 +55,42 @@ export default function DiscoverBusinesses() {
 
     load();
     return () => { cancelled = true; };
-  }, [sessionStatus, profileStatus, profile?.role, appliedQuery]);
+  }, [sessionStatus, profileStatus, profile?.role, applied]);
+
+  function applyFilters() {
+    setApplied({ ...filters });
+  }
 
   return (
     <ProtectedRoute allowedRoles={["creator"]}>
       <AppShell role={role} title="Discover businesses" description="Review brands and businesses interested in creator collaborations.">
-        <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto]">
+        <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
           <SearchBox
             placeholder="Search businesses or industries"
-            value={query}
-            onChange={(e) => setQuery(e.currentTarget.value)}
+            value={filters.query}
+            onChange={(e) => setFilters((prev) => ({ ...prev, query: e.currentTarget.value }))}
           />
-          <Button type="button" onClick={() => setAppliedQuery(query)} disabled={status === "loading"}>
-            Search
+          <select
+            aria-label="Filter by city"
+            value={filters.city}
+            onChange={(e) => setFilters((prev) => ({ ...prev, city: e.currentTarget.value }))}
+            className="rounded-full border border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/10"
+          >
+            <option value="">All cities</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+          <input
+            aria-label="Filter by industry"
+            type="text"
+            placeholder="Industry"
+            value={filters.industry}
+            onChange={(e) => setFilters((prev) => ({ ...prev, industry: e.currentTarget.value }))}
+            className="rounded-full border border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/10"
+          />
+          <Button type="button" onClick={applyFilters} disabled={status === "loading"}>
+            Apply filters
           </Button>
         </div>
 

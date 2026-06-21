@@ -136,3 +136,19 @@ export async function listCities(): Promise<string[]> {
   const cities = new Set((data ?? []).map((r) => r.city).filter((c): c is string => c !== null));
   return Array.from(cities).sort();
 }
+
+/** List distinct cities from the public_business_cards view. */
+export async function listBusinessCities(): Promise<string[]> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { data, error } = await supabase
+    .from("public_business_cards")
+    .select("city")
+    .not("city", "is", null)
+    .order("city", { ascending: true });
+
+  if (error) throw error;
+
+  const cities = new Set((data ?? []).map((r) => r.city).filter((c): c is string => c !== null));
+  return Array.from(cities).sort();
+}
