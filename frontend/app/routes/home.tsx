@@ -95,7 +95,7 @@ export default function Home() {
   const isAuthed = status === "authenticated";
   const needsOnboarding = isAuthed && !profile;
   const homePath = needsOnboarding ? "/onboarding" : isAuthed ? profileHomePath(profile) : "/signup";
-  const dashboardLabel = profile?.role === "business" ? "Business dashboard" : "Creator dashboard";
+  const dashboardLabel = profile?.role === "admin" ? "Admin dashboard" : profile?.role === "business" ? "Business dashboard" : "Creator dashboard";
 
   return (
     <MarketingShell>

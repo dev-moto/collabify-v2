@@ -24,6 +24,13 @@ const completedBusinessProfile: NonNullable<SessionState["profile"]> = {
   display_name: "Sunrise Cafe PH",
 };
 
+const completedAdminProfile: NonNullable<SessionState["profile"]> = {
+  ...completedCreatorProfile,
+  id: "admin-1",
+  role: "admin",
+  display_name: "Collabify Admin",
+};
+
 describe("ProtectedRoute", () => {
   function renderWithStatus(status: string, sessionState: Partial<SessionState> = {}, initialEntries = ["/"]) {
     return renderWithProviders(
@@ -31,6 +38,7 @@ describe("ProtectedRoute", () => {
         <Route path="/" element={<ProtectedRoute><div>Secret Content</div></ProtectedRoute>} />
         <Route path="/creator/dashboard" element={<ProtectedRoute allowedRoles={["creator"]}><div>Creator Dashboard</div></ProtectedRoute>} />
         <Route path="/business/dashboard" element={<ProtectedRoute allowedRoles={["business"]}><div>Business Dashboard</div></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><div>Admin Dashboard</div></ProtectedRoute>} />
         <Route path="/login" element={<div>Login Page</div>} />
         <Route path="/onboarding" element={<ProtectedRoute><div>Onboarding Page</div></ProtectedRoute>} />
       </Routes>,
@@ -109,5 +117,17 @@ describe("ProtectedRoute", () => {
     renderWithStatus("authenticated", { profileStatus: "ready", profile: completedCreatorProfile }, ["/business/dashboard"]);
     expect(screen.getByText("Creator Dashboard")).toBeInTheDocument();
     expect(screen.queryByText("Business Dashboard")).not.toBeInTheDocument();
+  });
+
+  it("redirects an admin away from the creator dashboard to the admin dashboard", () => {
+    renderWithStatus("authenticated", { profileStatus: "ready", profile: completedAdminProfile }, ["/creator/dashboard"]);
+    expect(screen.getByText("Admin Dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Creator Dashboard")).not.toBeInTheDocument();
+  });
+
+  it("redirects non-admin users away from the admin dashboard", () => {
+    renderWithStatus("authenticated", { profileStatus: "ready", profile: completedCreatorProfile }, ["/admin"]);
+    expect(screen.getByText("Creator Dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Admin Dashboard")).not.toBeInTheDocument();
   });
 });

@@ -4,7 +4,7 @@ import { Building2, CheckCircle2, UserRound, type LucideIcon } from "lucide-reac
 import type { Route } from "./+types/onboarding";
 
 import { Button, ProtectedRoute, StatusPanel } from "~/components/ui";
-import { completeOnboarding, profileHomePath, type AccountRole } from "~/services/profileService";
+import { completeOnboarding, profileHomePath, type ProfileRole } from "~/services/profileService";
 import { useAppDispatch } from "~/store/hooks";
 import { profileChanged } from "~/store/sessionSlice";
 
@@ -15,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Onboarding() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [role, setRole] = useState<AccountRole>("creator");
+  const [role, setRole] = useState<ProfileRole>("creator");
   const [displayName, setDisplayName] = useState("");
   const [city, setCity] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");

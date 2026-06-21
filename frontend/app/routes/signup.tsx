@@ -21,7 +21,7 @@ import { BrandLogo } from "~/components/BrandLogo";
 import { ThemeToggle } from "~/components/ThemeToggle";
 import { Button } from "~/components/ui";
 import { signUpWithEmail, validateEmail, validatePassword } from "~/services/authService";
-import type { AccountRole } from "~/services/profileService";
+import type { ProfileRole } from "~/services/profileService";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Create account | Collabify" }];
@@ -42,11 +42,11 @@ const personas = {
     description: "Verify your business, discover creators, and manage campaigns professionally.",
     bullets: ["Verification-first outreach", "Creator discovery by city", "Campaign and offer tracking"],
   },
-} satisfies Record<AccountRole, { icon: LucideIcon; label: string; title: string; description: string; bullets: string[] }>;
+} satisfies Record<ProfileRole, { icon: LucideIcon; label: string; title: string; description: string; bullets: string[] }>;
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<AccountRole>("creator");
+  const [role, setRole] = useState<ProfileRole>("creator");
   const [displayName, setDisplayName] = useState("");
   const [city, setCity] = useState("");
   const [email, setEmail] = useState("");
@@ -138,7 +138,7 @@ export default function Signup() {
 
               <form className="grid gap-5" onSubmit={onSubmit} noValidate>
                 <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Choose account type">
-                  {(Object.keys(personas) as AccountRole[]).map((persona) => (
+                  {(Object.keys(personas) as ProfileRole[]).map((persona) => (
                     <PersonaCard key={persona} selected={role === persona} onSelect={() => setRole(persona)} {...personas[persona]} />
                   ))}
                 </div>

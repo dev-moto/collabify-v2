@@ -1,6 +1,7 @@
 import { supabase } from "~/lib/supabase";
 
-export type AccountRole = "creator" | "business";
+export type ProfileRole = "creator" | "business";
+export type AccountRole = ProfileRole | "admin";
 
 export type Profile = {
   id: string;
@@ -14,15 +15,37 @@ export type Profile = {
 };
 
 export type OnboardingInput = {
-  role: AccountRole;
+  role: ProfileRole;
   displayName: string;
   city?: string;
 };
 
 export function profileHomePath(profile: Pick<Profile, "role"> | null) {
+  if (profile?.role === "admin") return "/admin";
   if (profile?.role === "business") return "/business/dashboard";
   if (profile?.role === "creator") return "/creator/dashboard";
   return "/onboarding";
+}
+
+type ProfileRow = Omit<Profile, "role"> & { role: ProfileRole };
+
+async function currentUserHasAdminRole(userId: string) {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle<{ role: "admin" }>();
+
+  if (error) throw error;
+  return data?.role === "admin";
+}
+
+async function withEffectiveRole(profile: ProfileRow, userId: string): Promise<Profile> {
+  const isAdmin = await currentUserHasAdminRole(userId);
+  return isAdmin ? { ...profile, role: "admin" } : profile;
 }
 
 export async function getCurrentProfile() {
@@ -40,11 +63,12 @@ export async function getCurrentProfile() {
     .from("profiles")
     .select("id, role, display_name, city, status, onboarding_completed, created_at, updated_at")
     .eq("id", user.id)
-    .maybeSingle<Profile>();
+    .maybeSingle<ProfileRow>();
 
   if (error) throw error;
+  if (!data) return null;
 
-  return data;
+  return withEffectiveRole(data, user.id);
 }
 
 export async function completeOnboarding(input: OnboardingInput) {
@@ -78,11 +102,11 @@ export async function completeOnboarding(input: OnboardingInput) {
       { onConflict: "id" },
     )
     .select("id, role, display_name, city, status, onboarding_completed, created_at, updated_at")
-    .single<Profile>();
+    .single<ProfileRow>();
 
   if (error) throw error;
 
-  return data;
+  return withEffectiveRole(data, user.id);
 }
 
 export type ProfileUpdateInput = {
@@ -124,9 +148,9 @@ export async function updateProfile(input: ProfileUpdateInput): Promise<Profile>
     .update(updates)
     .eq("id", user.id)
     .select("id, role, display_name, city, status, onboarding_completed, created_at, updated_at")
-    .single<Profile>();
+    .single<ProfileRow>();
 
   if (error) throw error;
   if (!data) throw new Error("Failed to update profile.");
-  return data;
+  return withEffectiveRole(data, user.id);
 }

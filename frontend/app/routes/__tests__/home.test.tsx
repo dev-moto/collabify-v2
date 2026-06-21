@@ -77,6 +77,21 @@ describe("Home", () => {
   });
 
   /* ------------------------------------------------------------------ */
+  /*  Authenticated admin                                                */
+  /* ------------------------------------------------------------------ */
+
+  it("renders Go to Admin dashboard for authenticated admin", () => {
+    render({
+      status: "authenticated",
+      profile: { ...baseProfile, role: "admin" },
+    });
+    const links = screen.getAllByText("Go to Admin dashboard");
+    expect(links.length).toBeGreaterThanOrEqual(1);
+    const adminLinks = links.filter((l) => l.closest("a")?.getAttribute("href") === "/admin");
+    expect(adminLinks.length).toBeGreaterThanOrEqual(1);
+  });
+
+  /* ------------------------------------------------------------------ */
   /*  Authenticated without profile (needs onboarding)                   */
   /* ------------------------------------------------------------------ */
 

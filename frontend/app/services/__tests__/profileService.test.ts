@@ -42,7 +42,7 @@ vi.mock("~/lib/supabase", () => ({
 /*  Import after mocks                                                  */
 /* ------------------------------------------------------------------ */
 
-import { updateProfile } from "~/services/profileService";
+import { profileHomePath, updateProfile } from "~/services/profileService";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -155,5 +155,11 @@ describe("updateProfile", () => {
     mockAuthedUser();
     rejectWith(new Error("DB error"));
     await expect(updateProfile({ display_name: "Test" })).rejects.toThrow("DB error");
+  });
+});
+
+describe("profileHomePath", () => {
+  it("routes effective admin profiles to the admin dashboard", () => {
+    expect(profileHomePath({ role: "admin" })).toBe("/admin");
   });
 });
