@@ -48,7 +48,7 @@ export function FormField({
     <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
       {label}
       <input
-        className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none ring-cyan-500/20 transition focus:border-cyan-500 focus:ring-4 dark:border-white/10 dark:bg-white/10 dark:text-white"
+        className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none ring-indigo-500/20 transition focus:border-indigo-500 focus:ring-4 dark:border-white/10 dark:bg-white/10 dark:text-white"
         type={type}
         name={name}
         placeholder={placeholder}

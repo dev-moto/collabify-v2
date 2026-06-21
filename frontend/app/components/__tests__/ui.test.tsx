@@ -36,11 +36,11 @@ describe("Badge", () => {
     expect(span?.className).toContain("text-amber-700");
   });
 
-  it("applies cyan tone classes", () => {
-    const { container } = renderWithProviders(<Badge tone="cyan">Info</Badge>);
+  it("applies brand tone classes", () => {
+    const { container } = renderWithProviders(<Badge tone="brand">Info</Badge>);
     const span = container.querySelector("span");
-    expect(span?.className).toContain("bg-cyan-50");
-    expect(span?.className).toContain("text-cyan-700");
+    expect(span?.className).toContain("bg-indigo-50");
+    expect(span?.className).toContain("text-indigo-700");
   });
 
   it("applies violet tone classes", () => {

@@ -55,7 +55,7 @@ export function NotificationBell() {
         aria-expanded={open}
         aria-haspopup="true"
         onClick={() => setOpen((prev) => !prev)}
-        className="relative cursor-pointer rounded-full p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:text-slate-300 dark:hover:bg-white/10"
+        className="relative cursor-pointer rounded-full p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:text-slate-300 dark:hover:bg-white/10"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -77,7 +77,7 @@ export function NotificationBell() {
               type="button"
               aria-label="Close notifications"
               onClick={() => setOpen(false)}
-              className="cursor-pointer rounded-full p-1 text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:hover:bg-white/10"
+              className="cursor-pointer rounded-full p-1 text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:hover:bg-white/10"
             >
               <X className="h-4 w-4" />
             </button>
@@ -92,14 +92,14 @@ export function NotificationBell() {
                   key={n.id}
                   type="button"
                   role="menuitem"
-                  className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-400 dark:hover:bg-white/5 ${
-                    n.unread ? "bg-cyan-50/50 dark:bg-cyan-400/5" : ""
+                  className={`w-full cursor-pointer rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400 dark:hover:bg-white/5 ${
+                    n.unread ? "bg-indigo-50/60 dark:bg-indigo-400/5" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-sm font-bold">{n.title}</span>
                     {n.unread && (
-                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-cyan-500" aria-label="Unread" />
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-500" aria-label="Unread" />
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{n.message}</p>

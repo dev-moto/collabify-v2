@@ -10,15 +10,15 @@ import { profileHomePath, type AccountRole } from "~/services/profileService";
 
 export function Button({ children, variant = "primary", className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" }) {
   const styles = variant === "primary" ? "bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950" : variant === "secondary" ? "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 dark:border-white/10 dark:bg-white/10 dark:text-white" : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10";
-  return <button className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:cursor-not-allowed disabled:opacity-70 ${styles} ${className}`} {...props}>{children}</button>;
+  return <button className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-70 ${styles} ${className}`} {...props}>{children}</button>;
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5 ${className}`}>{children}</section>;
 }
 
-export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: "slate" | "green" | "amber" | "cyan" | "violet" | "red" }) {
-  const tones = { slate: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200", green: "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200", amber: "bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-200", cyan: "bg-cyan-50 text-cyan-700 dark:bg-cyan-400/10 dark:text-cyan-200", violet: "bg-violet-50 text-violet-700 dark:bg-violet-400/10 dark:text-violet-200", red: "bg-red-50 text-red-700 dark:bg-red-400/10 dark:text-red-200" };
+export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: "slate" | "brand" | "green" | "amber" | "cyan" | "violet" | "red" }) {
+  const tones = { slate: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200", brand: "bg-indigo-50 text-indigo-700 dark:bg-indigo-400/10 dark:text-indigo-200", green: "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200", amber: "bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-200", cyan: "bg-cyan-50 text-cyan-700 dark:bg-cyan-400/10 dark:text-cyan-200", violet: "bg-violet-50 text-violet-700 dark:bg-violet-400/10 dark:text-violet-200", red: "bg-red-50 text-red-700 dark:bg-red-400/10 dark:text-red-200" };
   return <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${tones[tone]}`}>{children}</span>;
 }
 
@@ -54,7 +54,7 @@ export function AppShell({ children, role = "creator", title, description }: { c
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <Badge tone="cyan">{role} workspace</Badge>
+          <Badge tone="brand">{role} workspace</Badge>
           <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-4xl">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-300">{description}</p>
         </div>
@@ -140,9 +140,9 @@ export function ProtectedRoute({ children, allowedRoles }: { children: ReactNode
 }
 
 export function SearchBox({ placeholder = "Search", value, onChange, ...props }: { placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement> } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "placeholder" | "value" | "onChange">) {
-  return <label className="relative block"><span className="sr-only">{placeholder}</span><Search className="pointer-events-none absolute left-4 top-3 h-5 w-5 text-slate-400" /><input value={value} onChange={onChange} className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-cyan-400 dark:border-white/10 dark:bg-white/10" placeholder={placeholder} {...props} /></label>;
+  return <label className="relative block"><span className="sr-only">{placeholder}</span><Search className="pointer-events-none absolute left-4 top-3 h-5 w-5 text-slate-400" /><input value={value} onChange={onChange} className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-400 dark:border-white/10 dark:bg-white/10" placeholder={placeholder} {...props} /></label>;
 }
 
 export function VerifiedMark() { return <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-600 dark:text-emerald-300"><ShieldCheck className="h-4 w-4" /> Verified</span>; }
 
-export function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) { return <Card><Icon className="h-5 w-5 text-cyan-500" /><p className="mt-4 text-2xl font-black">{value}</p><p className="text-sm text-slate-500">{label}</p></Card>; }
+export function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) { return <Card><Icon className="h-5 w-5 text-indigo-500" /><p className="mt-4 text-2xl font-black">{value}</p><p className="text-sm text-slate-500">{label}</p></Card>; }
