@@ -148,7 +148,7 @@ describe("listAuditLogs", () => {
     await listAuditLogs();
     expect(mockFrom).toHaveBeenCalledWith("audit_logs");
     expect(mockBuilder.order).toHaveBeenCalledWith("created_at", { ascending: false });
-    expect(mockBuilder.limit).toHaveBeenCalledWith(50);
+    expect(mockBuilder.limit).toHaveBeenCalledWith(100);
   });
 
   it("returns audit log entries", async () => {
@@ -164,7 +164,7 @@ describe("listAuditLogs", () => {
 describe("listReports", () => {
   it("queries reports with open and reviewing status", async () => {
     resolveWith([]);
-    await listReports();
+    await listReports("open");
     expect(mockFrom).toHaveBeenCalledWith("reports");
     expect(mockBuilder.in).toHaveBeenCalledWith("status", ["open", "reviewing"]);
   });

@@ -36,8 +36,176 @@ export type Report = {
   updated_at: string;
 };
 
+export type AdminUser = {
+  id: string;
+  display_name: string;
+  role: "creator" | "business";
+  city: string | null;
+  status: "active" | "suspended" | "deleted";
+  is_admin: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DashboardStats = {
+  total_users: number;
+  total_creators: number;
+  total_businesses: number;
+  total_suspended: number;
+  pending_verifications: number;
+  open_reports: number;
+};
+
 /* ------------------------------------------------------------------ */
-/*  Services                                                           */
+/*  Dashboard stats                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Fetch aggregate counts for the admin dashboard. */
+export async function getDashboardStats(): Promise<DashboardStats> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { count: total_users } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true });
+
+  const { count: total_creators } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "creator");
+
+  const { count: total_businesses } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "business");
+
+  const { count: total_suspended } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "suspended");
+
+  const { count: pending_verifications } = await supabase
+    .from("business_profiles")
+    .select("*", { count: "exact", head: true })
+    .in("verification_status", ["unsubmitted", "pending"]);
+
+  const { count: open_reports } = await supabase
+    .from("reports")
+    .select("*", { count: "exact", head: true })
+    .in("status", ["open", "reviewing"]);
+
+  return {
+    total_users: total_users ?? 0,
+    total_creators: total_creators ?? 0,
+    total_businesses: total_businesses ?? 0,
+    total_suspended: total_suspended ?? 0,
+    pending_verifications: pending_verifications ?? 0,
+    open_reports: open_reports ?? 0,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  User management                                                    */
+/* ------------------------------------------------------------------ */
+
+/** List all users with profile data, ordered by most recently created.
+ *  Resolves admin status from the user_roles table. */
+export async function listUsers(query?: string): Promise<AdminUser[]> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  let builder = supabase
+    .from("profiles")
+    .select(`
+      id,
+      display_name,
+      role,
+      city,
+      status,
+      created_at,
+      updated_at
+    `);
+
+  if (query) {
+    builder = builder.ilike("display_name", `%${query}%`);
+  }
+
+  const { data: profiles, error } = await builder
+    .order("created_at", { ascending: false })
+    .limit(100)
+    .returns<Pick<AdminUser, "id" | "display_name" | "role" | "city" | "status" | "created_at" | "updated_at">[]>();
+
+  if (error) throw error;
+
+  if (!profiles || profiles.length === 0) return [];
+
+  // Resolve admin status for each user
+  const userIds = profiles.map((p) => p.id);
+  const { data: adminRoles } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .in("user_id", userIds);
+
+  const adminIds = new Set((adminRoles ?? []).map((r) => r.user_id));
+
+  return profiles.map((p) => ({
+    ...p,
+    is_admin: adminIds.has(p.id),
+  }));
+}
+
+/** Get a single user's profile plus admin role info. */
+export async function getUserDetail(userId: string): Promise<AdminUser | null> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, role, city, status, created_at, updated_at")
+    .eq("id", userId)
+    .single()
+    .returns<Pick<AdminUser, "id" | "display_name" | "role" | "city" | "status" | "created_at" | "updated_at"> | null>();
+
+  if (error) throw error;
+  if (!profile) return null;
+
+  const { data: adminRole } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return {
+    ...profile,
+    is_admin: !!adminRole,
+  };
+}
+
+/** Suspend a user. RLS allows admins to update any profile. */
+export async function suspendUser(
+  userId: string,
+): Promise<void> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "suspended" })
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
+/** Reactivate a previously suspended user. */
+export async function activateUser(userId: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "active" })
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Verification review                                                */
 /* ------------------------------------------------------------------ */
 
 /** List business profiles pending verification review.
@@ -88,30 +256,48 @@ export async function listVerificationDocuments(
   return data ?? [];
 }
 
+/* ------------------------------------------------------------------ */
+/*  Audit logs                                                         */
+/* ------------------------------------------------------------------ */
+
 /** List audit log entries. RLS restricts to admins. */
-export async function listAuditLogs(): Promise<AuditLogEntry[]> {
+export async function listAuditLogs(limit = 100): Promise<AuditLogEntry[]> {
   if (!supabase) throw new Error("Supabase is not configured for this environment.");
 
   const { data, error } = await supabase
     .from("audit_logs")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(50)
+    .limit(limit)
     .returns<AuditLogEntry[]>();
 
   if (error) throw error;
   return data ?? [];
 }
 
-/** List reports (open/reviewing). RLS restricts to admins for select. */
-export async function listReports(): Promise<Report[]> {
+/* ------------------------------------------------------------------ */
+/*  Reports                                                            */
+/* ------------------------------------------------------------------ */
+
+/** List all reports, newest first. */
+export async function listReports(statusFilter?: string): Promise<Report[]> {
   if (!supabase) throw new Error("Supabase is not configured for this environment.");
 
-  const { data, error } = await supabase
+  let builder = supabase
     .from("reports")
     .select("*")
-    .in("status", ["open", "reviewing"])
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (statusFilter) {
+    if (statusFilter === "open") {
+      builder = builder.in("status", ["open", "reviewing"]);
+    } else {
+      builder = builder.eq("status", statusFilter);
+    }
+  }
+
+  const { data, error } = await builder
+    .limit(100)
     .returns<Report[]>();
 
   if (error) throw error;
@@ -133,10 +319,15 @@ export async function updateReportStatus(
   if (error) throw error;
 }
 
-/** Record an admin action in the audit log. */
+/* ------------------------------------------------------------------ */
+/*  Admin actions logging                                              */
+/* ------------------------------------------------------------------ */
+
+/** Record an admin action in the admin_actions log. */
 export async function recordAdminAction(
   action: string,
   metadata?: Record<string, unknown>,
+  targetUserId?: string,
 ): Promise<void> {
   if (!supabase) throw new Error("Supabase is not configured for this environment.");
 
@@ -152,6 +343,7 @@ export async function recordAdminAction(
     admin_id: user.id,
     action,
     metadata: metadata ?? {},
+    target_user_id: targetUserId ?? null,
   });
 
   if (error) throw error;
