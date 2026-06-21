@@ -60,6 +60,8 @@
       "gh pr view*": "allow",
       "gh issue create*": "ask",
       "gh issue develop*": "ask",
+      "gh api graphql*": "ask",
+      "gh project*": "ask",
       "gh label create*": "ask",
       "supabase status*": "allow",
       "supabase db diff*": "ask",
@@ -74,6 +76,22 @@
     }
   },
   "agent": {
+    "explore": {
+      "mode": "subagent",
+      "description": "Fast read-only repo explorer for Collabify. Use only for targeted file discovery and codebase questions.",
+      "model": "openai/gpt-5.4",
+      "temperature": 0,
+      "steps": 6,
+      "permission": {
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "edit": "deny",
+        "bash": "deny",
+        "external_directory": "deny"
+      }
+    },
     "build": {
       "mode": "primary",
       "description": "Main implementation agent for Collabify web app.",
