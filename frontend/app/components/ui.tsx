@@ -80,7 +80,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
     : [["Discover creators", "/discover/creators"] as const, ["Discover businesses", "/discover/businesses"] as const];
 
   const navLinks = [
-    ...(isAuthed && profile?.role === "creator" ? [["Dashboard", "/creator/dashboard"]] as const : []),
+    ...(isAuthed && profile?.role === "creator" ? [["Dashboard", "/creator/dashboard"], ["Showcase", "/creator/showcase"]] as const : []),
     ...(isAuthed && profile?.role === "business" ? [["Dashboard", "/business/dashboard"]] as const : []),
     ...discoverLinks,
     ...(isAuthed ? [["Messages", "/messages"] as const, ["Campaigns", "/campaigns"] as const] : []),

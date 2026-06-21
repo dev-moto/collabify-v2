@@ -16,6 +16,7 @@ export default [
   route("appointments", "routes/appointments.tsx"),
   route("messages", "routes/messages.tsx"),
   route("campaigns", "routes/campaigns.tsx"),
+  route("creator/showcase", "routes/creator-showcase.tsx"),
   route("settings", "routes/settings.tsx"),
   route("billing", "routes/billing.tsx"),
   route("admin", "routes/admin.tsx"),
