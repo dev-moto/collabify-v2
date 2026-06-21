@@ -81,20 +81,83 @@ function progressFor(status) {
   return 20;
 }
 
-function agentStatus(name, agent) {
-  if (name === "build") return "Working";
-  if (["frontend", "architect", "testing"].includes(name)) return "Ready";
+const agentKeywordMap = {
+  architect: ["supabase", "schema", "rls", "storage", "migration", "architecture", "database", "realtime"],
+  build: ["implementation", "dashboard", "workflow", "issue", "fix", "build", "active agents"],
+  explore: ["docs", "progress", "trace", "discovery", "files", "context", "read-only"],
+  frontend: ["frontend", "react", "vite", "tailwind", "router", "redux", "ui", "dashboard", "shell"],
+  monetization: ["monetization", "billing", "subscription", "pricing", "campaign fees", "x-deal"],
+  plan: ["planning", "roadmap", "issue", "epic", "next recommended", "sequence", "review"],
+  security: ["security", "auth", "role", "rls", "privacy", "compliance", "permission", "guard"],
+  testing: ["test", "tests", "quality", "typecheck", "verification", "regression", "uat"],
+};
+
+function isDoneStatus(status = "") {
+  return ["Done", "Complete", "Updated"].includes(status);
+}
+
+function scoreWorkForAgent(item, name, agent) {
+  const notes = item.notes && !item.notes.startsWith("Generated from") ? item.notes : "";
+  const haystack = `${item.title} ${item.scope} ${notes}`.toLowerCase();
+  const keywords = [name, ...(agentKeywordMap[name] || [])];
+  let score = 0;
+  for (const keyword of keywords) {
+    if (haystack.includes(keyword.toLowerCase())) score += keyword === name ? 12 : 4;
+  }
+  if (score === 0) return 0;
+  if (item.status === "In progress") score += 8;
+  if (["Requested", "Ready", "Backlog"].includes(item.status)) score += 3;
+  if (isDoneStatus(item.status)) score -= 2;
+  return score;
+}
+
+function workSummaryForAgent(name, agent, workItems) {
+  const scored = workItems
+    .map((item) => ({ item, score: scoreWorkForAgent(item, name, agent) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => {
+      const activeDelta = Number(!isDoneStatus(b.item.status)) - Number(!isDoneStatus(a.item.status));
+      if (activeDelta) return activeDelta;
+      return b.score - a.score;
+    });
+  const selected = scored[0]?.item;
+  if (!selected) {
+    return {
+      currentTask: agent.description || "Monitoring project context",
+      progress: agent.permission?.edit === "deny" && agent.permission?.bash === "deny" ? 38 : 45,
+      workStatus: agent.permission?.edit === "deny" && agent.permission?.bash === "deny" ? "Watching" : "Idle",
+      lastActivity: "No matching progress item in docs/progress.md yet.",
+      relatedWorkCount: 0,
+    };
+  }
+  return {
+    currentTask: selected.title,
+    progress: selected.progress,
+    workStatus: selected.status,
+    lastActivity: selected.notes && !selected.notes.startsWith("Generated from") ? selected.notes : selected.scope,
+    relatedWorkCount: scored.length,
+  };
+}
+
+function agentStatus(name, agent, summary) {
+  if (summary?.workStatus === "In progress") return "Working";
+  if (summary && !isDoneStatus(summary.workStatus) && summary.relatedWorkCount > 0) return "Ready";
   if (agent.permission?.edit === "deny" && agent.permission?.bash === "deny") return "Watching";
   return "Idle";
 }
 
 function logsForAgent(agent, index, workItems) {
   const now = Date.now();
-  const related = workItems.filter((item, itemIndex) => itemIndex % 8 === index % 8).slice(0, 3);
+  const related = workItems
+    .map((item) => ({ item, score: scoreWorkForAgent(item, agent.name, agent) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ item }) => item)
+    .slice(0, 3);
   const base = related.length
     ? related.map((item) => `${item.status}: ${item.title}`)
     : [
-        `${agent.status}: ${agent.description}`,
+        `${agent.status}: ${agent.currentTask || agent.description}`,
         `mode=${agent.mode} model=${agent.model}`,
         agent.canRunBash ? "bash permission requires approval" : "bash disabled for this agent",
       ];
@@ -152,15 +215,29 @@ async function getDashboardData() {
       tags: ["docs", "progress"],
     }));
 
-  const agents = Object.entries(opencode.agent || {}).map(([name, agent]) => ({
-    name,
-    mode: agent.mode || "agent",
-    model: agent.model || opencode.model,
-    description: agent.description || "OpenCode agent",
-    status: agentStatus(name, agent),
-    canEdit: agent.permission?.edit !== "deny",
-    canRunBash: agent.permission?.bash !== "deny",
-  }));
+  const agents = Object.entries(opencode.agent || {}).map(([name, agent]) => {
+    const normalized = {
+      mode: agent.mode || "agent",
+      model: agent.model || opencode.model,
+      description: agent.description || "OpenCode agent",
+      permission: agent.permission || {},
+    };
+    const summary = workSummaryForAgent(name, normalized, workItems);
+    return {
+      name,
+      mode: normalized.mode,
+      model: normalized.model,
+      description: normalized.description,
+      status: agentStatus(name, normalized, summary),
+      canEdit: normalized.permission?.edit !== "deny",
+      canRunBash: normalized.permission?.bash !== "deny",
+      currentTask: summary.currentTask,
+      progress: summary.progress,
+      workStatus: summary.workStatus,
+      lastActivity: summary.lastActivity,
+      relatedWorkCount: summary.relatedWorkCount,
+    };
+  });
   const agentLogs = Object.fromEntries(agents.map((agent, index) => [agent.name, logsForAgent(agent, index, workItems)]));
 
   const sparklines = Object.fromEntries(agents.map((agent, index) => {

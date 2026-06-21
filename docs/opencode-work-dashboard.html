@@ -192,24 +192,33 @@
       .dashboard {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+        align-items: start;
         gap: 16px;
         overflow: visible;
         padding: 18px;
       }
 
       .main-col, .side-col { min-width: 0; }
-      .main-col { display: grid; gap: 16px; }
+      .main-col { display: grid; align-content: start; grid-auto-rows: max-content; gap: 16px; }
       .side-col { display: grid; align-content: start; gap: 16px; }
 
-      .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        grid-auto-rows: 124px;
+        align-items: start;
+        gap: 12px;
+      }
       .metric {
         position: relative;
         overflow: hidden;
         display: grid;
         grid-template-columns: 64px 1fr;
         align-items: center;
+        align-self: start;
         gap: 14px;
-        min-height: 96px;
+        height: 124px;
+        min-height: 0;
         border: 1px solid var(--stroke);
         border-radius: 13px;
         background: var(--panel);
@@ -284,14 +293,48 @@
 
       .workflow {
         position: relative;
-        height: 100%;
-        min-height: 0;
+        min-height: 680px;
+        overflow: auto;
         background-image:
           linear-gradient(rgba(38, 92, 149, 0.16) 1px, transparent 1px),
           linear-gradient(90deg, rgba(38, 92, 149, 0.16) 1px, transparent 1px);
         background-size: 28px 28px;
         padding: 18px;
       }
+      .workflow-tools {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        pointer-events: none;
+      }
+      .workflow-tools-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid rgba(101, 143, 205, 0.2);
+        border-radius: 10px;
+        background: rgba(7, 20, 38, 0.92);
+        padding: 6px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+        pointer-events: auto;
+      }
+      .workflow-tools button {
+        border: 1px solid rgba(101, 143, 205, 0.18);
+        border-radius: 8px;
+        background: rgba(34, 110, 255, 0.14);
+        color: #ddecff;
+        cursor: pointer;
+        font-weight: 900;
+        min-width: 34px;
+        padding: 7px 10px;
+      }
+      .workflow-tools button:hover { background: rgba(34, 110, 255, 0.24); }
+      .workflow-tools output { min-width: 44px; color: var(--muted); font-size: 0.78rem; font-weight: 900; text-align: center; }
+      .workflow-zoom-space { position: relative; min-width: 100%; min-height: 680px; }
+      .workflow-scale-layer { position: relative; min-width: 100%; min-height: 680px; transform-origin: 0 0; }
       .agent-map {
         position: relative;
         z-index: 2;
@@ -379,6 +422,7 @@
       .terminal span[data-level="error"] { color: var(--danger); }
       .terminal span[data-level="info"] { color: #bde3ff; }
       .agent-foot { display: flex; align-items: end; justify-content: space-between; gap: 10px; min-width: 0; color: #c2d1e5; font-size: 0.82rem; }
+      .agent-foot > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .sparkline { flex: 0 1 100px; max-width: 45%; height: 20px; filter: drop-shadow(0 0 6px var(--agent)); }
       .wire { display: none; }
 
@@ -501,7 +545,15 @@
 
             <section class="panel" id="agents">
               <div class="panel-head"><div class="panel-title"><span class="dot"></span>Active Agents</div><div class="segmented"><button class="active" type="button" data-agent-view="workflow">Workflow View</button><button type="button" data-agent-view="grid">Grid View</button></div></div>
-              <div class="workflow" id="workflowCanvas"><svg class="workflow-connections" id="workflowConnections" aria-hidden="true"></svg><div class="agent-map" id="agentGrid"><span class="wire w1"></span><span class="wire w2"></span><span class="wire w3"></span></div></div>
+              <div class="workflow" id="workflowCanvas">
+                <div class="workflow-tools"><div class="workflow-tools-inner"><button type="button" id="zoomOutBtn" title="Zoom out">−</button><output id="zoomLevel">100%</output><button type="button" id="zoomInBtn" title="Zoom in">+</button><button type="button" id="zoomFitBtn" title="Fit to view">Fit</button></div></div>
+                <div class="workflow-zoom-space" id="workflowZoomSpace">
+                  <div class="workflow-scale-layer" id="workflowScaleLayer">
+                    <svg class="workflow-connections" id="workflowConnections" aria-hidden="true"></svg>
+                    <div class="agent-map" id="agentGrid"><span class="wire w1"></span><span class="wire w2"></span><span class="wire w3"></span></div>
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section class="panel" id="workflow">
@@ -625,6 +677,9 @@
       const workflowStorageKey = "opencode-dashboard-agent-positions:v1";
       let workflowPositions = JSON.parse(localStorage.getItem(workflowStorageKey) || "{}");
       let dragState = null;
+      let workflowZoom = 1;
+      const zoomMin = 0.25, zoomMax = 3, zoomStep = 0.2;
+      let workflowAutoFitPending = true;
 
       function escapeHtml(value) {
         return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -683,6 +738,9 @@
       }
 
       function normalizedStatus(agent) {
+        if (agent.workStatus === "In progress") return "Working";
+        if (["Done", "Complete", "Updated"].includes(agent.workStatus)) return "Complete";
+        if (["Requested", "Ready", "Backlog"].includes(agent.workStatus)) return "Queued";
         if (agent.status === "Working") return "Working";
         if (agent.status === "Ready") return agent.name === "testing" ? "Running Tests" : agent.name === "architect" ? "Modeling" : agent.name === "frontend" ? "Coding" : "Ready";
         if (agent.status === "Watching") return "Watching";
@@ -690,6 +748,7 @@
       }
 
       function agentTask(agent) {
+        if (agent.currentTask) return agent.currentTask;
         const name = agent.name.toLowerCase();
         if (name.includes("security")) return "Checking auth and role permissions";
         if (name.includes("testing")) return "Executing unit and integration suite";
@@ -763,31 +822,129 @@
         container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%"><polyline fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/></svg>`;
       }
 
+      function applyZoom() {
+        const scaleLayer = document.querySelector("#workflowScaleLayer");
+        const zoomSpace = document.querySelector("#workflowZoomSpace");
+        if (!scaleLayer || !zoomSpace) return;
+        scaleLayer.style.transform = `scale(${workflowZoom})`;
+        const output = document.querySelector("#zoomLevel");
+        if (output) output.textContent = `${Math.round(workflowZoom * 100)}%`;
+        const logicalW = Math.max(600, scaleLayer.scrollWidth);
+        const logicalH = Math.max(680, scaleLayer.scrollHeight);
+        zoomSpace.style.minWidth = `${logicalW * workflowZoom}px`;
+        zoomSpace.style.minHeight = `${logicalH * workflowZoom}px`;
+      }
+
+      function zoomIn() {
+        workflowZoom = Math.min(zoomMax, +(workflowZoom + zoomStep).toFixed(2));
+        applyZoom();
+      }
+
+      function zoomOut() {
+        workflowZoom = Math.max(zoomMin, +(workflowZoom - zoomStep).toFixed(2));
+        applyZoom();
+      }
+
+      function zoomFit() {
+        const cards = [...document.querySelectorAll("[data-agent-card]")];
+        const zoomSpace = document.querySelector("#workflowZoomSpace");
+        const scaleLayer = document.querySelector("#workflowScaleLayer");
+        if (!cards.length || !zoomSpace || !scaleLayer) return;
+        const viewW = zoomSpace.clientWidth;
+        const viewH = zoomSpace.clientHeight - 20;
+        if (viewW <= 0 || viewH <= 0) return;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        cards.forEach((card) => {
+          const l = parseFloat(card.style.left) || 0;
+          const t = parseFloat(card.style.top) || 0;
+          const r = l + card.offsetWidth;
+          const b = t + card.offsetHeight;
+          if (l < minX) minX = l;
+          if (t < minY) minY = t;
+          if (r > maxX) maxX = r;
+          if (b > maxY) maxY = b;
+        });
+        const pad = 40;
+        const contentW = maxX - minX + pad * 2;
+        const contentH = maxY - minY + pad * 2;
+        const scale = Math.min(viewW / contentW, viewH / contentH);
+        workflowZoom = Math.max(zoomMin, Math.min(zoomMax, +scale.toFixed(2)));
+        applyZoom();
+        workflowAutoFitPending = false;
+      }
+
+      function workflowCardBox(card) {
+        const left = parseFloat(card.style.left) || 0;
+        const top = parseFloat(card.style.top) || 0;
+        const width = card.offsetWidth;
+        const height = card.offsetHeight;
+        return {
+          left,
+          top,
+          width,
+          height,
+          right: left + width,
+          bottom: top + height,
+          centerX: left + width / 2,
+          centerY: top + height / 2,
+        };
+      }
+
+      function workflowAnchor(box, side) {
+        if (side === "left") return { x: box.left, y: box.centerY, side };
+        if (side === "right") return { x: box.right, y: box.centerY, side };
+        if (side === "top") return { x: box.centerX, y: box.top, side };
+        return { x: box.centerX, y: box.bottom, side: "bottom" };
+      }
+
+      function dynamicWorkflowAnchors(from, to) {
+        const dx = to.centerX - from.centerX;
+        const dy = to.centerY - from.centerY;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          return dx >= 0
+            ? [workflowAnchor(from, "right"), workflowAnchor(to, "left")]
+            : [workflowAnchor(from, "left"), workflowAnchor(to, "right")];
+        }
+        return dy >= 0
+          ? [workflowAnchor(from, "bottom"), workflowAnchor(to, "top")]
+          : [workflowAnchor(from, "top"), workflowAnchor(to, "bottom")];
+      }
+
+      function workflowControlPoint(anchor, distance) {
+        const vectors = {
+          left: [-1, 0],
+          right: [1, 0],
+          top: [0, -1],
+          bottom: [0, 1],
+        };
+        const [vx, vy] = vectors[anchor.side] || [1, 0];
+        return { x: anchor.x + vx * distance, y: anchor.y + vy * distance };
+      }
+
+      function dynamicWorkflowPath(fromAnchor, toAnchor) {
+        const distance = Math.max(42, Math.min(170, Math.hypot(toAnchor.x - fromAnchor.x, toAnchor.y - fromAnchor.y) * 0.42));
+        const c1 = workflowControlPoint(fromAnchor, distance);
+        const c2 = workflowControlPoint(toAnchor, distance);
+        return `M ${fromAnchor.x} ${fromAnchor.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${toAnchor.x} ${toAnchor.y}`;
+      }
+
       function drawWorkflowConnections() {
         const svg = document.querySelector("#workflowConnections");
-        const canvas = document.querySelector("#workflowCanvas");
+        const scaleLayer = document.querySelector("#workflowScaleLayer");
         const cards = [...document.querySelectorAll("[data-agent-card]")];
-        if (!svg || !canvas || agentView !== "workflow" || cards.length < 2) {
+        if (!svg || !scaleLayer || agentView !== "workflow" || cards.length < 2) {
           if (svg) svg.innerHTML = "";
           return;
         }
-
-        const canvasBox = canvas.getBoundingClientRect();
-        svg.setAttribute("viewBox", `0 0 ${canvasBox.width} ${canvasBox.height}`);
+        const w = Math.max(600, scaleLayer.scrollWidth);
+        const h = Math.max(680, scaleLayer.scrollHeight);
+        svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
         const links = cards.slice(0, -1).map((card, index) => {
-          const from = card.getBoundingClientRect();
-          const to = cards[index + 1].getBoundingClientRect();
-          const x1 = from.right - canvasBox.left;
-          const y1 = from.top + from.height / 2 - canvasBox.top;
-          const x2 = to.left - canvasBox.left;
-          const y2 = to.top + to.height / 2 - canvasBox.top;
-          const sameRow = Math.abs(y1 - y2) < Math.max(from.height, to.height) / 2;
-          const midX = sameRow ? (x1 + x2) / 2 : Math.max(x1 + 24, Math.min(canvasBox.width - 24, (x1 + x2) / 2));
-          const d = sameRow
-            ? `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`
-            : `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
-          const color = colors[index % colors.length].replace("var(--", "var(--");
-          return `<path d="${d}" style="stroke:${color}"></path><circle cx="${x2}" cy="${y2}" r="4" style="fill:${color}"></circle>`;
+          const next = cards[index + 1];
+          const [fromAnchor, toAnchor] = dynamicWorkflowAnchors(workflowCardBox(card), workflowCardBox(next));
+          const d = dynamicWorkflowPath(fromAnchor, toAnchor);
+          const color = colors[index % colors.length];
+          return `<path d="${d}" style="stroke:${color}"></path><circle cx="${fromAnchor.x}" cy="${fromAnchor.y}" r="3" style="fill:${color}"></circle><circle cx="${toAnchor.x}" cy="${toAnchor.y}" r="4" style="fill:${color}"></circle>`;
         }).join("");
         svg.innerHTML = links;
       }
@@ -805,36 +962,44 @@
 
       function applyWorkflowLayout() {
         const map = document.querySelector("#agentGrid");
-        const canvas = document.querySelector("#workflowCanvas");
+        const zoomSpace = document.querySelector("#workflowZoomSpace");
         const cards = [...document.querySelectorAll("[data-agent-card]")];
-        if (!map || !canvas) return;
+        if (!map || !zoomSpace) return;
 
         if (agentView !== "workflow") {
           map.classList.remove("workflow-drag-layout");
-          canvas.style.minHeight = "";
           cards.forEach((card) => {
             card.style.left = "";
             card.style.top = "";
           });
+          const scaleLayer = document.querySelector("#workflowScaleLayer");
+          if (scaleLayer) { scaleLayer.style.transform = ""; scaleLayer.style.minHeight = ""; }
+          const zoomSpace = document.querySelector("#workflowZoomSpace");
+          if (zoomSpace) { zoomSpace.style.minWidth = ""; zoomSpace.style.minHeight = ""; }
           drawWorkflowConnections();
           return;
         }
 
         map.classList.add("workflow-drag-layout");
-        const canvasWidth = Math.max(320, canvas.clientWidth - 36);
+        const spaceWidth = Math.max(320, zoomSpace.clientWidth - 36);
         let maxY = 0;
         cards.forEach((card, index) => {
           const name = card.dataset.agentCard;
-          const cardWidth = Math.min(270, Math.max(220, canvasWidth - 24));
+          const cardWidth = Math.min(270, Math.max(220, spaceWidth - 24));
           const saved = workflowPositions[name];
-          const fallback = defaultWorkflowPosition(index, cardWidth, canvasWidth);
-          const x = Math.max(8, Math.min(saved?.x ?? fallback.x, canvasWidth - cardWidth));
+          const fallback = defaultWorkflowPosition(index, cardWidth, spaceWidth);
+          const x = Math.max(8, Math.min(saved?.x ?? fallback.x, spaceWidth - cardWidth));
           const y = Math.max(8, saved?.y ?? fallback.y);
           card.style.left = `${x}px`;
           card.style.top = `${y}px`;
           maxY = Math.max(maxY, y + card.offsetHeight + 24);
         });
-        canvas.style.minHeight = `${Math.max(680, maxY)}px`;
+        const scaleLayer = document.querySelector("#workflowScaleLayer");
+        if (scaleLayer) scaleLayer.style.minHeight = `${Math.max(680, maxY)}px`;
+        applyZoom();
+        if (workflowAutoFitPending && cards.length) {
+          requestAnimationFrame(() => zoomFit());
+        }
         requestAnimationFrame(drawWorkflowConnections);
       }
 
@@ -842,14 +1007,17 @@
         document.querySelectorAll("[data-agent-card]").forEach((card) => {
           card.addEventListener("pointerdown", (event) => {
             if (agentView !== "workflow" || event.target.closest("button, a, input")) return;
-            const rect = card.getBoundingClientRect();
-            const canvasRect = document.querySelector("#workflowCanvas").getBoundingClientRect();
+            const scaleLayer = document.querySelector("#workflowScaleLayer");
+            if (!scaleLayer) return;
+            const scaleRect = scaleLayer.getBoundingClientRect();
             dragState = {
               card,
               name: card.dataset.agentCard,
-              offsetX: event.clientX - rect.left,
-              offsetY: event.clientY - rect.top,
-              canvasRect,
+              offsetX: (event.clientX - scaleRect.left) / workflowZoom - (parseFloat(card.style.left) || 0),
+              offsetY: (event.clientY - scaleRect.top) / workflowZoom - (parseFloat(card.style.top) || 0),
+              startX: parseFloat(card.style.left) || 0,
+              startY: parseFloat(card.style.top) || 0,
+              scaleRect,
             };
             card.classList.add("dragging");
             card.setPointerCapture(event.pointerId);
@@ -859,15 +1027,14 @@
 
       function moveDraggedCard(event) {
         if (!dragState) return;
-        const { card, name, offsetX, offsetY, canvasRect } = dragState;
-        const canvas = document.querySelector("#workflowCanvas");
-        const maxX = Math.max(8, canvas.clientWidth - card.offsetWidth - 18);
-        const x = Math.max(8, Math.min(event.clientX - canvasRect.left - offsetX, maxX));
-        const y = Math.max(8, event.clientY - canvasRect.top - offsetY);
+        const { card, name, offsetX, offsetY, startX, startY, scaleRect } = dragState;
+        const logicalX = (event.clientX - scaleRect.left) / workflowZoom;
+        const logicalY = (event.clientY - scaleRect.top) / workflowZoom;
+        const x = Math.max(8, +(logicalX - offsetX).toFixed(1));
+        const y = Math.max(8, +(logicalY - offsetY).toFixed(1));
         workflowPositions[name] = { x, y };
         card.style.left = `${x}px`;
         card.style.top = `${y}px`;
-        canvas.style.minHeight = `${Math.max(680, y + card.offsetHeight + 24)}px`;
         requestAnimationFrame(drawWorkflowConnections);
       }
 
@@ -883,8 +1050,10 @@
         const visible = agents.filter((agent) => `${agent.name} ${agent.description} ${agent.status}`.toLowerCase().includes(query));
         document.querySelector("#agentGrid").innerHTML = '<span class="wire w1"></span><span class="wire w2"></span><span class="wire w3"></span>' + visible.map((agent, index) => {
           const color = colors[index % colors.length];
-          const pct = agent.status === "Working" ? 72 : agent.status === "Ready" ? 61 - (index % 3) * 7 : agent.status === "Watching" ? 47 : 39;
+          const pct = Number.isFinite(Number(agent.progress)) ? Math.max(0, Math.min(100, Number(agent.progress))) : agent.status === "Working" ? 72 : agent.status === "Ready" ? 61 - (index % 3) * 7 : agent.status === "Watching" ? 47 : 39;
           const title = `${agent.name.charAt(0).toUpperCase()}${agent.name.slice(1)} Agent`;
+          const activity = agent.lastActivity || `${agent.relatedWorkCount || 0} related progress items`;
+          const footer = `${agent.workStatus || normalizedStatus(agent)} · ${pct}% · ${agent.relatedWorkCount || 0} related`;
           const terminalLines = terminalLogsFor(agent, index).map((log, logIndex) => {
             const cursor = logIndex === 2 ? " ▌" : "";
             return `<span data-level="${escapeHtml(log.level || "info")}">› ${escapeHtml(log.message)}${cursor}</span>`;
@@ -896,9 +1065,9 @@
                 <div><h3>${escapeHtml(title)}</h3><small>${escapeHtml(agent.model)}</small></div>
                 <div class="num">${index + 1}</div>
               </div>
-              <div class="agent-mid"><div class="mini-ring" style="--pct: ${pct}%" data-pct="${pct}%"></div><div><span class="status"><span class="dot" style="background: currentColor; box-shadow: 0 0 10px currentColor"></span>${escapeHtml(normalizedStatus(agent))}</span><p class="agent-task">${escapeHtml(agentTask(agent))}</p></div></div>
+              <div class="agent-mid"><div class="mini-ring" style="--pct: ${pct}%" data-pct="${pct}%"></div><div><span class="status"><span class="dot" style="background: currentColor; box-shadow: 0 0 10px currentColor"></span>${escapeHtml(normalizedStatus(agent))}</span><p class="agent-task" title="${escapeHtml(activity)}">${escapeHtml(agentTask(agent))}</p></div></div>
               <div class="terminal" data-agent-terminal="${escapeHtml(agent.name)}">${terminalLines}</div>
-              <div class="agent-foot"><span>◷ 00:${String(17 + index * 2).padStart(2, "0")}:${String(58 - index * 3).padStart(2, "0")}</span><div class="sparkline"></div></div>
+              <div class="agent-foot"><span title="${escapeHtml(activity)}">${escapeHtml(footer)}</span><div class="sparkline"></div></div>
             </article>`;
         }).join("");
         const data = Object.keys(sparklines).length ? sparklines : fallbackSparklines();
@@ -1037,6 +1206,7 @@
           button.classList.add("active");
           agentView = button.dataset.agentView;
           document.querySelector("#agentGrid").classList.toggle("grid-view", agentView === "grid");
+          if (agentView === "workflow") workflowAutoFitPending = true;
           applyWorkflowLayout();
           showToast(`${button.textContent.trim()} enabled.`);
           visit("#agents");
@@ -1078,6 +1248,9 @@
         showToast(selectedLogAgent === "all" ? "Showing logs for all agents." : `Showing logs for ${selectedLogAgent}.`);
       });
       document.querySelector("#refreshCta").addEventListener("click", () => loadServerData().then(() => showToast("Dashboard data refreshed.")));
+      document.querySelector("#zoomOutBtn")?.addEventListener("click", zoomOut);
+      document.querySelector("#zoomInBtn")?.addEventListener("click", zoomIn);
+      document.querySelector("#zoomFitBtn")?.addEventListener("click", () => { workflowAutoFitPending = false; zoomFit(); });
       window.addEventListener("hashchange", () => setActiveNav(window.location.hash || "#overview"));
       window.addEventListener("resize", () => requestAnimationFrame(applyWorkflowLayout));
       window.addEventListener("pointermove", moveDraggedCard);

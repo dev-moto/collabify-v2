@@ -43,7 +43,7 @@ begin
     'authenticated',
     'authenticated',
     v_email,
-    crypt('Admin@123', gen_salt('bf')),
+    extensions.crypt('Admin@123', extensions.gen_salt('bf')),
     now(),
     '{"display_name": "Collabify Admin"}'::jsonb,
     now(),
