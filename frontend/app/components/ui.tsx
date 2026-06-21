@@ -34,7 +34,7 @@ export function Field({ label, error, children }: { label: string; error?: strin
 export function AppShell({ children, role = "creator", title, description }: { children: ReactNode; role?: "creator" | "business" | "admin"; title: string; description: string }) {
   const discoverLabel = role === "creator" ? "Discover businesses" : "Discover creators";
   const discoverHref = role === "creator" ? "/discover/businesses" : "/discover/creators";
-  const nav = role === "admin" ? [["Admin", "/admin"], ["Reports", "/admin"], ["Audit logs", "/admin"]] : [["Dashboard", role === "creator" ? "/creator/dashboard" : "/business/dashboard"], [discoverLabel, discoverHref], ["Campaigns", "/campaigns"], ["Appointments", "/appointments"], ["Messages", "/messages"]];
+  const nav = role === "admin" ? [["Admin", "/admin"], ["Reports", "/admin"], ["Audit logs", "/admin"]] : [["Dashboard", role === "creator" ? "/creator/dashboard" : "/business/dashboard"], [discoverLabel, discoverHref], ...(role === "business" ? [["Profile", "/business/profile"]] as const : []), ["Campaigns", "/campaigns"], ["Appointments", "/appointments"], ["Messages", "/messages"]];
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-white/10 dark:bg-slate-950/90">

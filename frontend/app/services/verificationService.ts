@@ -15,6 +15,13 @@ export type BusinessProfileExtended = {
   is_discoverable: boolean;
 };
 
+export type BusinessProfileUpdate = {
+  business_name?: string;
+  industry?: string | null;
+  city?: string | null;
+  is_discoverable?: boolean;
+};
+
 export type VerificationDocument = {
   id: string;
   business_id: string;
@@ -62,6 +69,45 @@ export async function getBusinessProfile(): Promise<BusinessProfileExtended | nu
     .maybeSingle<BusinessProfileExtended>();
 
   if (error) throw error;
+  return data;
+}
+
+/** Update the current business profile (owner-only via RLS).
+ *  Fields that cannot be changed (verification_status) are silently ignored. */
+export async function updateBusinessProfile(input: BusinessProfileUpdate): Promise<BusinessProfileExtended> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) throw userError;
+  if (!user) throw new Error("You must be logged in.");
+
+  const updates: Record<string, unknown> = {};
+  if (input.business_name !== undefined) {
+    const name = input.business_name.trim();
+    if (name.length < 2) throw new Error("Business name must be at least 2 characters.");
+    updates.business_name = name;
+  }
+  if (input.industry !== undefined) updates.industry = input.industry?.trim() || null;
+  if (input.city !== undefined) updates.city = input.city?.trim() || null;
+  if (input.is_discoverable !== undefined) updates.is_discoverable = input.is_discoverable;
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("No fields to update.");
+  }
+
+  const { data, error } = await supabase
+    .from("business_profiles")
+    .update(updates)
+    .eq("id", user.id)
+    .select("id, business_name, industry, city, verification_status, is_discoverable")
+    .single<BusinessProfileExtended>();
+
+  if (error) throw error;
+  if (!data) throw new Error("Failed to update business profile.");
   return data;
 }
 

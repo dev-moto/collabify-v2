@@ -9,6 +9,7 @@ export default [
   route("onboarding", "routes/onboarding.tsx"),
   route("creator/dashboard", "routes/creator-dashboard.tsx"),
   route("business/dashboard", "routes/business-dashboard.tsx"),
+  route("business/profile", "routes/business-profile-edit.tsx"),
   route("creators/:id", "routes/creator-profile.tsx"),
   route("businesses/:id", "routes/business-profile.tsx"),
   route("discover/creators", "routes/discover-creators.tsx"),
