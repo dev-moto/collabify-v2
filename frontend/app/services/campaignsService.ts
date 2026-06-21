@@ -257,3 +257,22 @@ export async function updateOfferStatus(
   if (!data) throw new Error("Failed to update offer.");
   return data;
 }
+
+/** Update the status of a campaign (publish/close/cancel). */
+export async function updateCampaignStatus(
+  campaignId: string,
+  status: Campaign["status"],
+): Promise<Campaign> {
+  if (!supabase) throw new Error("Supabase is not configured for this environment.");
+
+  const { data, error } = await supabase
+    .from("campaigns")
+    .update({ status })
+    .eq("id", campaignId)
+    .select("*")
+    .single<Campaign>();
+
+  if (error) throw error;
+  if (!data) throw new Error("Failed to update campaign.");
+  return data;
+}
