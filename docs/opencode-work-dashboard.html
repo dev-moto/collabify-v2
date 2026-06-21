@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenCode Project Agent Dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #020713;
+        --panel: rgba(8, 18, 34, 0.9);
+        --panel-2: rgba(10, 24, 44, 0.82);
+        --stroke: rgba(101, 143, 205, 0.22);
+        --muted: #8ea4c6;
+        --text: #eef6ff;
+        --blue: #20a8ff;
+        --cyan: #17e9ff;
+        --green: #42f55b;
+        --purple: #a855f7;
+        --amber: #ffb703;
+        --pink: #ff5ab3;
+        --teal: #16f2d0;
+        --danger: #ff647c;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+
+      body {
+        margin: 0;
+        overflow: auto;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(32, 168, 255, 0.16), transparent 28rem),
+          radial-gradient(circle at 88% 18%, rgba(168, 85, 247, 0.13), transparent 26rem),
+          linear-gradient(180deg, #050b16 0%, var(--bg) 100%);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button, input, select {
+        font: inherit;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        border-right: 1px solid var(--stroke);
+        background: rgba(2, 7, 19, 0.68);
+        padding: 20px 18px;
+        backdrop-filter: blur(18px);
+      }
+
+      .brand {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        align-items: center;
+        gap: 13px;
+      }
+
+      .logo {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 2px solid rgba(123, 160, 255, 0.72);
+        border-radius: 15px;
+        color: #dce9ff;
+        font-weight: 950;
+        box-shadow: 0 0 28px rgba(32, 168, 255, 0.28), inset 0 0 18px rgba(32, 168, 255, 0.12);
+      }
+
+      .brand strong { display: block; font-size: 1.48rem; letter-spacing: -0.04em; }
+      .brand span { color: var(--muted); font-size: 0.77rem; font-weight: 800; letter-spacing: 0.08em; }
+
+      .nav { display: grid; gap: 10px; }
+      .nav a {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-radius: 12px;
+        color: #bdc9dd;
+        padding: 14px 15px;
+        text-decoration: none;
+        font-weight: 750;
+      }
+      .nav a.active {
+        color: #31d7ff;
+        background: linear-gradient(90deg, rgba(13, 117, 255, 0.55), rgba(13, 117, 255, 0.18));
+        box-shadow: inset 0 0 22px rgba(32, 168, 255, 0.16);
+      }
+      .nav svg { width: 22px; height: 22px; }
+
+      .sidebar-bottom { margin-top: auto; display: grid; gap: 16px; }
+      .mini-card {
+        border: 1px solid var(--stroke);
+        border-radius: 12px;
+        background: rgba(12, 25, 44, 0.72);
+        padding: 15px;
+      }
+      .connected { color: var(--green); font-weight: 850; }
+      .profile { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; }
+      .avatar-img {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #dbeafe, #64748b);
+        color: #081122;
+        font-weight: 950;
+      }
+
+      .content {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-width: 0;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 20px;
+        border-bottom: 1px solid var(--stroke);
+        background: rgba(4, 10, 22, 0.74);
+        min-height: 78px;
+        padding: 14px 24px;
+        backdrop-filter: blur(18px);
+      }
+
+      h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.72rem); letter-spacing: -0.03em; white-space: nowrap; }
+      h2, h3, p { margin: 0; }
+      p { color: var(--muted); line-height: 1.45; }
+
+      .top-actions {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+        min-width: 0;
+      }
+      .pill, .icon-btn, .search {
+        border: 1px solid var(--stroke);
+        border-radius: 10px;
+        background: rgba(7, 16, 32, 0.88);
+        color: #dce8fa;
+        box-shadow: inset 0 0 18px rgba(32, 168, 255, 0.04);
+      }
+      .pill { display: inline-flex; align-items: center; gap: 10px; padding: 11px 16px; font-weight: 820; text-decoration: none; cursor: pointer; }
+      button.pill { appearance: none; }
+      .dot { width: 10px; height: 10px; border-radius: 99px; background: var(--green); box-shadow: 0 0 14px var(--green); }
+      .search { display: flex; align-items: center; gap: 10px; flex: 1 1 280px; min-width: 220px; max-width: 360px; padding: 0 14px; }
+      .search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); padding: 12px 0; }
+      .icon-btn { position: relative; display: grid; place-items: center; width: 43px; height: 43px; }
+      .icon-btn.active { border-color: rgba(23, 233, 255, 0.48); background: rgba(16, 40, 75, 0.95); color: var(--cyan); }
+      .badge-count { position: absolute; top: -7px; right: -6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 99px; background: #2e8bff; font-size: 0.75rem; font-weight: 900; }
+      .popover {
+        position: fixed;
+        top: 72px;
+        right: 18px;
+        z-index: 60;
+        width: min(380px, calc(100vw - 36px));
+        border: 1px solid rgba(101, 143, 205, 0.32);
+        border-radius: 14px;
+        background: rgba(4, 12, 25, 0.98);
+        box-shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(18px);
+        overflow: hidden;
+      }
+      .popover-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(101, 143, 205, 0.16); padding: 14px 16px; }
+      .popover-head strong { font-size: 0.98rem; }
+      .popover-body { display: grid; gap: 10px; max-height: 420px; overflow: auto; padding: 14px 16px; }
+      .popover-item { border: 1px solid rgba(101, 143, 205, 0.14); border-radius: 10px; background: rgba(8, 18, 34, 0.72); padding: 11px; }
+      .popover-item strong { display: block; margin-bottom: 4px; }
+      .popover-item p { font-size: 0.86rem; }
+      .popover-close { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.2rem; }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+        gap: 16px;
+        overflow: visible;
+        padding: 18px;
+      }
+
+      .main-col, .side-col { min-width: 0; }
+      .main-col { display: grid; gap: 16px; }
+      .side-col { display: grid; align-content: start; gap: 16px; }
+
+      .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+      .metric {
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 64px 1fr;
+        align-items: center;
+        gap: 14px;
+        min-height: 96px;
+        border: 1px solid var(--stroke);
+        border-radius: 13px;
+        background: var(--panel);
+        padding: 14px;
+      }
+      .metric::after, .agent-card::after {
+        content: "";
+        position: absolute;
+        right: 12px;
+        bottom: 13px;
+        width: 90px;
+        height: 28px;
+        opacity: 0.88;
+        background: var(--spark, var(--blue));
+        clip-path: polygon(0 75%, 10% 75%, 16% 63%, 25% 70%, 34% 45%, 43% 58%, 54% 69%, 63% 36%, 73% 50%, 82% 32%, 91% 38%, 100% 28%, 100% 100%, 0 100%);
+        filter: drop-shadow(0 0 5px var(--spark, var(--blue)));
+      }
+      .metric-icon {
+        display: grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+        background: rgba(32, 168, 255, 0.16);
+        color: var(--spark, var(--blue));
+        box-shadow: inset 0 0 20px rgba(32, 168, 255, 0.1), 0 0 25px rgba(32, 168, 255, 0.16);
+      }
+      .metric small { color: #c3d0e3; font-size: 0.88rem; }
+      .metric strong { display: block; margin-top: 2px; font-size: 2rem; line-height: 1; }
+      .metric span { color: var(--muted); font-size: 0.82rem; }
+      .health { grid-template-columns: 74px 1fr; }
+      .ring {
+        display: grid;
+        place-items: center;
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: conic-gradient(var(--teal) 0 98%, rgba(255, 255, 255, 0.11) 98% 100%);
+      }
+      .ring::before {
+        content: "98%";
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #071426;
+        font-weight: 950;
+      }
+
+      .panel {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--stroke);
+        border-radius: 14px;
+        background: var(--panel);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.23);
+      }
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid rgba(101, 143, 205, 0.14);
+      }
+      .panel-title { display: flex; align-items: center; gap: 10px; font-weight: 900; }
+      .panel-title .dot { width: 9px; height: 9px; }
+      .segmented { display: inline-flex; border: 1px solid var(--stroke); border-radius: 10px; overflow: hidden; background: rgba(11, 25, 49, 0.82); }
+      .segmented button { border: 0; background: transparent; color: var(--muted); padding: 8px 18px; cursor: pointer; font-weight: 800; }
+      .segmented button.active { color: #ddecff; background: rgba(34, 110, 255, 0.24); }
+
+      .workflow {
+        position: relative;
+        height: 100%;
+        min-height: 0;
+        background-image:
+          linear-gradient(rgba(38, 92, 149, 0.16) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(38, 92, 149, 0.16) 1px, transparent 1px);
+        background-size: 28px 28px;
+        padding: 18px;
+      }
+      .agent-map {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        min-height: 0;
+      }
+      .agent-map.workflow-drag-layout {
+        display: block;
+        min-height: 680px;
+      }
+      .workflow-connections { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+      .workflow-connections path { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linecap: round; opacity: 0.78; filter: drop-shadow(0 0 8px var(--cyan)); stroke-dasharray: 8 8; animation: connectionFlow 3.4s linear infinite; }
+      .workflow-connections circle { fill: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); }
+      .agent-map.grid-view { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+      .agent-map.grid-view .terminal, .agent-map.grid-view .agent-foot { display: none; }
+      .agent-map.grid-view .agent-card { min-height: 160px; }
+      .agent-card {
+        --agent: var(--blue);
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-rows: 58px 88px 72px 24px;
+        gap: 14px;
+        min-height: 286px;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--agent) 55%, transparent);
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(11, 25, 49, 0.96), rgba(5, 14, 29, 0.95));
+        box-shadow: 0 0 34px color-mix(in srgb, var(--agent) 18%, transparent), inset 0 0 24px rgba(255, 255, 255, 0.03);
+        padding: 16px;
+        touch-action: none;
+        user-select: none;
+      }
+      .workflow-drag-layout .agent-card {
+        position: absolute;
+        width: min(270px, calc(100% - 24px));
+        cursor: grab;
+      }
+      .workflow-drag-layout .agent-card.dragging {
+        z-index: 5;
+        cursor: grabbing;
+        transform: scale(1.015);
+        box-shadow: 0 0 44px color-mix(in srgb, var(--agent) 34%, transparent), inset 0 0 24px rgba(255, 255, 255, 0.04);
+      }
+      .agent-card.working { box-shadow: 0 0 34px color-mix(in srgb, var(--agent) 28%, transparent), inset 0 0 24px rgba(255, 255, 255, 0.03); }
+      .agent-top { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; }
+      .agent-top > div:nth-child(2) { min-width: 0; }
+      .agent-icon {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--agent) 24%, transparent);
+        color: var(--agent);
+        box-shadow: 0 0 28px color-mix(in srgb, var(--agent) 35%, transparent);
+        animation: float 3.8s ease-in-out infinite;
+      }
+      .agent-card h3 { display: -webkit-box; min-height: 2.35em; margin: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 0.96rem; line-height: 1.18; word-break: break-word; }
+      .agent-card small { display: block; margin-top: 3px; color: #b7c7dd; }
+      .num {
+        align-self: start;
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border: 1px solid color-mix(in srgb, var(--agent) 55%, transparent);
+        border-radius: 6px;
+        color: var(--agent);
+        background: color-mix(in srgb, var(--agent) 14%, transparent);
+        font-weight: 950;
+      }
+      .agent-mid { display: grid; grid-template-columns: 70px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 88px; }
+      .mini-ring { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: conic-gradient(var(--agent) var(--pct), rgba(255, 255, 255, 0.1) 0); }
+      .mini-ring::before { content: attr(data-pct); display: grid; place-items: center; width: 47px; height: 47px; border-radius: 50%; background: #071426; font-weight: 950; }
+      .status { display: inline-flex; width: max-content; max-width: 100%; gap: 7px; align-items: center; border-radius: 8px; background: color-mix(in srgb, var(--agent) 17%, transparent); color: var(--agent); padding: 5px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; font-weight: 900; }
+      .agent-task { display: -webkit-box; min-height: 2.9em; margin-top: 12px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; word-break: break-word; }
+      .terminal { min-width: 0; max-width: 100%; border: 1px solid rgba(101, 143, 205, 0.18); border-radius: 8px; background: rgba(1, 6, 14, 0.55); padding: 9px; color: #bde3ff; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.75rem; line-height: 1.45; }
+      .terminal span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .terminal span[data-level="success"] { color: var(--green); }
+      .terminal span[data-level="error"] { color: var(--danger); }
+      .terminal span[data-level="info"] { color: #bde3ff; }
+      .agent-foot { display: flex; align-items: end; justify-content: space-between; gap: 10px; min-width: 0; color: #c2d1e5; font-size: 0.82rem; }
+      .sparkline { flex: 0 1 100px; max-width: 45%; height: 20px; filter: drop-shadow(0 0 6px var(--agent)); }
+      .wire { display: none; }
+
+      .timeline { min-height: 238px; overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+      th, td { border-top: 1px solid rgba(101, 143, 205, 0.12); padding: 9px 18px; text-align: left; white-space: nowrap; }
+      th { color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+      td { color: #d4e0ef; }
+      .progress-track { width: 150px; height: 6px; border-radius: 999px; background: rgba(142, 164, 198, 0.14); overflow: hidden; }
+      .progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--row-color, var(--blue)); }
+
+      .activity { overflow: hidden; }
+      .activity-list { max-height: 330px; overflow: auto; padding: 6px 14px 14px; scrollbar-color: rgba(92, 127, 177, 0.8) transparent; }
+      .activity-item { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; border-bottom: 1px solid rgba(101, 143, 205, 0.12); padding: 13px 0; }
+      .activity-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--act, var(--blue)); background: color-mix(in srgb, var(--act, var(--blue)) 18%, transparent); }
+      .activity-item strong { display: block; font-size: 0.9rem; }
+      .activity-item span, .activity-item time { color: var(--muted); font-size: 0.82rem; }
+      .agent-log-grid { display: grid; gap: 10px; padding: 0 14px 14px; }
+      .agent-log-card { border: 1px solid rgba(101, 143, 205, 0.15); border-radius: 10px; background: rgba(2, 8, 18, 0.56); padding: 10px; }
+      .agent-log-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; font-weight: 900; }
+      .agent-log-head span { color: var(--muted); font-size: 0.76rem; font-weight: 800; }
+      .agent-log-line { display: grid; grid-template-columns: 64px 1fr; gap: 8px; color: #cfe0f4; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.72rem; line-height: 1.45; padding: 3px 0; }
+      .agent-log-line time { color: var(--muted); }
+      .agent-log-line[data-level="success"] { color: var(--green); }
+      .agent-log-line[data-level="error"] { color: var(--danger); }
+      .throughput { padding: 16px; }
+      .chart { position: relative; height: 198px; border-left: 1px solid rgba(101, 143, 205, 0.22); border-bottom: 1px solid rgba(101, 143, 205, 0.22); margin: 12px 10px 0 26px; }
+      .chart::before { content: "100\A75\A50\A25\A0"; white-space: pre; position: absolute; left: -34px; top: -5px; color: var(--muted); font-size: 0.75rem; line-height: 44px; }
+      .line { position: absolute; inset: 0; background: var(--line); clip-path: var(--shape); opacity: 0.9; filter: drop-shadow(0 0 8px var(--line)); }
+      .line::after { content: ""; position: absolute; inset: 2px 0 0; background: #071426; clip-path: var(--shape); transform: translateY(4px); }
+
+      .utility-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; padding: 16px; }
+      .utility-card { border: 1px solid rgba(101, 143, 205, 0.16); border-radius: 12px; background: rgba(4, 12, 25, 0.58); color: var(--text); padding: 14px; text-decoration: none; }
+      a.utility-card:hover { border-color: rgba(23, 233, 255, 0.4); }
+      .utility-card strong { display: block; margin-bottom: 6px; }
+      .hidden { display: none !important; }
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 50;
+        max-width: min(360px, calc(100vw - 36px));
+        border: 1px solid rgba(23, 233, 255, 0.35);
+        border-radius: 12px;
+        background: rgba(5, 16, 31, 0.96);
+        color: var(--text);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+        padding: 14px 16px;
+      }
+
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+      @keyframes connectionFlow { to { stroke-dashoffset: -32; } }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+      }
+
+      @media (max-width: 1350px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar { display: none; }
+        .dashboard { grid-template-columns: 1fr; overflow: visible; }
+        .side-col { grid-template-rows: auto auto; }
+      }
+
+      @media (max-width: 1100px) {
+        .topbar, .top-actions { flex-wrap: wrap; }
+        .top-actions { width: 100%; margin-left: 0; }
+      }
+
+      @media (max-width: 760px) {
+        .topbar { align-items: stretch; }
+        .top-actions { width: 100%; }
+        .search { order: 10; flex: 1 1 100%; }
+        .dashboard { padding: 12px; }
+        .metrics, .agent-map { grid-template-columns: 1fr; }
+        .agent-card { grid-template-rows: auto auto auto auto; }
+        .agent-mid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><div class="logo">OC</div><div><strong>OpenCode</strong><span>AGENT DASHBOARD</span></div></div>
+        <nav class="nav" aria-label="Dashboard navigation">
+          <a class="active" href="#overview" data-nav="overview"><span data-icon="home"></span>Overview</a>
+          <a href="#agents" data-nav="agents"><span data-icon="agent"></span>Agents</a>
+          <a href="#workflow" data-nav="workflow"><span data-icon="workflow"></span>Workflows</a>
+          <a href="#logs" data-nav="logs"><span data-icon="logs"></span>Logs</a>
+          <a href="#timeline" data-nav="timeline"><span data-icon="tasks"></span>Tasks</a>
+          <a href="#settings" data-nav="settings"><span data-icon="settings"></span>Settings</a>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="mini-card"><div class="connected">● <span id="connectionState">Static file mode</span></div><p>Project dashboard operational</p></div>
+          <div class="mini-card profile"><div class="avatar-img">OP</div><div><strong>Project Operator</strong><p>local@opencode</p></div><span>›</span></div>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <h1>Project AI-DLC / OpenCode</h1>
+          <div class="top-actions">
+            <button class="pill" id="environmentCta" type="button"><span class="dot"></span><span>Production</span></button>
+            <button class="pill" id="branchCta" type="button"><span data-icon="branch"></span><span>main</span></button>
+            <label class="search"><span data-icon="search"></span><input id="search" type="search" placeholder="Search anything..." /></label>
+            <button class="icon-btn" id="notificationsCta" type="button" aria-label="Notifications"><span data-icon="bell"></span><span class="badge-count">3</span></button>
+            <button class="icon-btn" id="helpCta" type="button" aria-label="Help"><span data-icon="help"></span></button>
+            <button class="icon-btn" id="exportCta" type="button" aria-label="Export"><span data-icon="export"></span></button>
+          </div>
+        </header>
+
+        <section class="dashboard" id="overview">
+          <div class="main-col">
+            <section class="metrics" aria-label="Metrics">
+              <article class="metric" style="--spark: var(--blue)"><div class="metric-icon" data-icon="bot"></div><div><small>Active Agents</small><strong id="agentMetric">0 / 0</strong><span>All systems engaged</span></div></article>
+              <article class="metric" style="--spark: var(--purple)"><div class="metric-icon" data-icon="tasks"></div><div><small>Current Tasks</small><strong id="taskMetric">0</strong><span>In progress</span></div></article>
+              <article class="metric" style="--spark: var(--amber)"><div class="metric-icon" data-icon="queue"></div><div><small>Queue</small><strong id="queueMetric">0</strong><span>Waiting</span></div></article>
+              <article class="metric" style="--spark: var(--green)"><div class="metric-icon" data-icon="check"></div><div><small>Completed Today</small><strong id="doneMetric">0</strong><span>+18% vs yesterday</span></div></article>
+              <article class="metric health" style="--spark: var(--teal)"><div class="ring"></div><div><small>System Health</small><strong style="font-size: 1.15rem; color: var(--teal)">Excellent</strong><span>All services healthy</span></div></article>
+            </section>
+
+            <section class="panel" id="agents">
+              <div class="panel-head"><div class="panel-title"><span class="dot"></span>Active Agents</div><div class="segmented"><button class="active" type="button" data-agent-view="workflow">Workflow View</button><button type="button" data-agent-view="grid">Grid View</button></div></div>
+              <div class="workflow" id="workflowCanvas"><svg class="workflow-connections" id="workflowConnections" aria-hidden="true"></svg><div class="agent-map" id="agentGrid"><span class="wire w1"></span><span class="wire w2"></span><span class="wire w3"></span></div></div>
+            </section>
+
+            <section class="panel" id="workflow">
+              <div class="panel-head"><div class="panel-title"><span class="dot"></span>Workflow Pages</div><a class="pill" href="#agents">View active graph →</a></div>
+              <div class="utility-grid" id="workflowCards"></div>
+            </section>
+
+            <section class="panel timeline" id="timeline">
+              <div class="panel-head"><div class="panel-title">Task Timeline &amp; Queue</div><div class="segmented"><button class="active" type="button" data-task-view="timeline">Timeline</button><button type="button" data-task-view="queue">Queue <span id="queueBubble">0</span></button></div></div>
+              <table><thead><tr><th>Time</th><th>Task</th><th>Assigned To</th><th>Status</th><th>Progress</th><th>Next</th></tr></thead><tbody id="taskRows"></tbody></table>
+            </section>
+          </div>
+
+          <aside class="side-col">
+            <section class="panel activity" id="logs">
+              <div class="panel-head"><div class="panel-title"><span class="dot"></span>Live Activity</div><button class="pill" id="filterCta" type="button" style="padding: 8px 12px"><span data-icon="filter"></span><span>Filter</span></button></div>
+              <div class="activity-list" id="activityList"></div>
+              <div class="panel-head" style="border-top: 1px solid rgba(101, 143, 205, 0.12)"><div class="panel-title"><span data-icon="logs"></span>Agent Logs</div><button class="pill" id="agentLogsCta" type="button" style="padding: 8px 12px">All agents</button></div>
+              <div class="agent-log-grid" id="agentLogGrid" aria-live="polite"></div>
+            </section>
+            <section class="panel throughput">
+              <div class="panel-head" style="padding: 0 0 10px; border: 0"><div class="panel-title">Workflow Throughput <span data-icon="info"></span></div><button class="pill" id="rangeCta" type="button" style="padding: 8px 12px">Today⌄</button></div>
+              <div class="chart" aria-label="Workflow throughput chart">
+                <div class="line" style="--line: var(--blue); --shape: polygon(0 63%, 8% 58%, 15% 50%, 23% 46%, 31% 36%, 39% 41%, 47% 30%, 55% 24%, 64% 19%, 73% 20%, 82% 18%, 91% 14%, 100% 11%, 100% 100%, 0 100%)"></div>
+                <div class="line" style="--line: var(--purple); --shape: polygon(0 42%, 8% 35%, 16% 18%, 25% 30%, 34% 43%, 44% 50%, 53% 47%, 62% 34%, 72% 29%, 81% 36%, 91% 30%, 100% 25%, 100% 100%, 0 100%)"></div>
+                <div class="line" style="--line: var(--green); --shape: polygon(0 72%, 8% 61%, 16% 69%, 25% 68%, 34% 56%, 44% 66%, 52% 70%, 63% 72%, 72% 69%, 82% 64%, 91% 58%, 100% 55%, 100% 100%, 0 100%)"></div>
+                <div class="line" style="--line: var(--pink); --shape: polygon(0 91%, 9% 83%, 18% 79%, 28% 76%, 38% 70%, 48% 75%, 58% 74%, 68% 70%, 78% 72%, 88% 67%, 100% 63%, 100% 100%, 0 100%)"></div>
+              </div>
+            </section>
+            <section class="panel" id="settings">
+              <div class="panel-head"><div class="panel-title"><span data-icon="settings"></span>Settings</div><button class="pill" id="refreshCta" type="button">Refresh data</button></div>
+              <div class="utility-grid">
+                <div class="utility-card"><strong>Source</strong><p>docs/progress.md + opencode.json</p></div>
+                <div class="utility-card"><strong>Realtime</strong><p>Server-Sent Events from /events</p></div>
+                <div class="utility-card"><strong>Tailscale URL</strong><p>Use this same port on your Tailscale device name/IP.</p></div>
+              </div>
+            </section>
+          </aside>
+        </section>
+      </main>
+    </div>
+    <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+    <section class="popover hidden" id="notificationsPanel" role="dialog" aria-modal="false" aria-labelledby="notificationsTitle">
+      <div class="popover-head"><strong id="notificationsTitle">Notifications</strong><button class="popover-close" type="button" data-close-popover="notificationsPanel" aria-label="Close notifications">×</button></div>
+      <div class="popover-body" id="notificationsBody"></div>
+    </section>
+    <section class="popover hidden" id="helpPanel" role="dialog" aria-modal="false" aria-labelledby="helpTitle">
+      <div class="popover-head"><strong id="helpTitle">Dashboard Help</strong><button class="popover-close" type="button" data-close-popover="helpPanel" aria-label="Close help">×</button></div>
+      <div class="popover-body">
+        <div class="popover-item"><strong>Serve locally</strong><p><code>node scripts/docs-dashboard-server.mjs --host 0.0.0.0 --port 4174</code></p></div>
+        <div class="popover-item"><strong>Use on Tailscale</strong><p>Open <code>http://&lt;tailscale-device-name-or-ip&gt;:4174</code> from another connected device.</p></div>
+        <div class="popover-item"><strong>Realtime sources</strong><p>The dashboard watches <code>docs/progress.md</code> and <code>opencode.json</code>, then streams updates over <code>/events</code>.</p></div>
+      </div>
+    </section>
+
+    <script>
+      function lucide(paths) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+      }
+
+      function iconForAgent(name) {
+        const map = {
+          build: icons.code,
+          frontend: icons.code,
+          explore: icons.searchCode,
+          plan: icons.lightbulb,
+          architect: icons.database,
+          security: icons.shield,
+          testing: icons.testTube,
+          monetization: icons.chart,
+          customize: icons.settings
+        };
+        return map[name] || icons.bot;
+      }
+
+      const icons = {
+        home: lucide('<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+        agent: lucide('<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>'),
+        workflow: lucide('<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 8v4"/>'),
+        logs: lucide('<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>'),
+        tasks: lucide('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9 12 2 2 4-4"/>'),
+        settings: lucide('<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>'),
+        branch: lucide('<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>'),
+        search: lucide('<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>'),
+        bell: lucide('<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>'),
+        help: lucide('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>'),
+        export: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
+        bot: lucide('<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>'),
+        queue: lucide('<path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/><circle cx="12" cy="12" r="3"/>'),
+        check: lucide('<path d="M20 6 9 17l-5-5"/>'),
+        filter: lucide('<path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/>'),
+        info: lucide('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'),
+        code: lucide('<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>'),
+        searchCode: lucide('<path d="m13 13.5 2-2.5-2-2.5"/><path d="m9 8.5-2 2.5 2 2.5"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
+        shield: lucide('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>'),
+        testTube: lucide('<path d="M14.5 2v6.5l4.63 8.02A3 3 0 0 1 16.53 21H7.47a3 3 0 0 1-2.6-4.48L9.5 8.5V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>'),
+        database: lucide('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>'),
+        lightbulb: lucide('<path d="M15 14c.2-1 .7-1.7 1.5-2.5A5 5 0 1 0 8 11.5c.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>'),
+        chart: lucide('<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>'),
+        clipboard: lucide('<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>')
+      };
+
+      const fallbackAgents = [
+        { name: "build", mode: "primary", model: "openai/gpt-5.5", description: "Main implementation agent for the current project.", status: "Working", canEdit: true, canRunBash: true },
+        { name: "frontend", mode: "subagent", model: "openai/gpt-5.5", description: "React, Vite, TailwindCSS, Redux Toolkit, React Router, and Supabase client implementation.", status: "Ready", canEdit: true, canRunBash: true },
+        { name: "architect", mode: "subagent", model: "openai/gpt-5.5", description: "Supabase schema, RLS, storage policies, realtime, edge functions, and scalable architecture.", status: "Ready", canEdit: true, canRunBash: true },
+        { name: "testing", mode: "subagent", model: "openai/gpt-5.4", description: "Unit, integration, E2E, RLS, storage policy, regression, and UAT testing.", status: "Ready", canEdit: true, canRunBash: true }
+      ];
+      let agents = fallbackAgents;
+      let workItems = [];
+      let agentLogs = {};
+      let sparklines = {};
+      let activityMessages = ["Dashboard loaded", "Waiting for realtime docs updates", "OpenCode agents mapped from opencode.json"];
+      const colors = ["var(--blue)", "var(--purple)", "var(--green)", "var(--amber)", "var(--cyan)", "var(--pink)", "var(--teal)", "#7c9cff"];
+      let taskView = "timeline";
+      let agentView = "workflow";
+      let activityFilterEnabled = false;
+      let selectedLogAgent = "all";
+      let rangeIndex = 0;
+      const ranges = ["Today⌄", "7 days⌄", "30 days⌄"];
+      const workflowStorageKey = "opencode-dashboard-agent-positions:v1";
+      let workflowPositions = JSON.parse(localStorage.getItem(workflowStorageKey) || "{}");
+      let dragState = null;
+
+      function escapeHtml(value) {
+        return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+      }
+
+      function installIcons() {
+        document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icons[el.dataset.icon] || icons.agent; });
+      }
+
+      function showToast(message) {
+        const toast = document.querySelector("#toast");
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.add("hidden"), 3200);
+      }
+
+      function closePopovers() {
+        document.querySelectorAll(".popover").forEach((panel) => panel.classList.add("hidden"));
+        document.querySelectorAll(".icon-btn").forEach((button) => button.classList.remove("active"));
+      }
+
+      function togglePopover(panelId, buttonId) {
+        const panel = document.querySelector(`#${panelId}`);
+        const button = document.querySelector(`#${buttonId}`);
+        const shouldOpen = panel.classList.contains("hidden");
+        closePopovers();
+        if (shouldOpen) {
+          panel.classList.remove("hidden");
+          button.classList.add("active");
+        }
+      }
+
+      function renderNotifications() {
+        const body = document.querySelector("#notificationsBody");
+        const rows = [
+          ["Realtime connected", `${agents.length} agents loaded from opencode.json`],
+          ["Agent terminals live", `${Object.keys(agentLogs).length || agents.length} realtime terminal/log streams active`],
+          ["Work source synced", `${workItems.length} current-project work items loaded`]
+        ];
+        body.innerHTML = rows.map(([title, copy]) => `<div class="popover-item"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p></div>`).join("");
+      }
+
+      function setActiveNav(hash = window.location.hash || "#overview") {
+        document.querySelectorAll(".nav a").forEach((link) => {
+          link.classList.toggle("active", link.getAttribute("href") === hash);
+        });
+      }
+
+      function visit(hash) {
+        const target = document.querySelector(hash);
+        if (!target) return showToast(`Page ${hash} is not available yet.`);
+        history.replaceState(null, "", hash);
+        setActiveNav(hash);
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function normalizedStatus(agent) {
+        if (agent.status === "Working") return "Working";
+        if (agent.status === "Ready") return agent.name === "testing" ? "Running Tests" : agent.name === "architect" ? "Modeling" : agent.name === "frontend" ? "Coding" : "Ready";
+        if (agent.status === "Watching") return "Watching";
+        return agent.canEdit ? "Idle" : "Guarded";
+      }
+
+      function agentTask(agent) {
+        const name = agent.name.toLowerCase();
+        if (name.includes("security")) return "Checking auth and role permissions";
+        if (name.includes("testing")) return "Executing unit and integration suite";
+        if (name.includes("architect")) return "Designing Supabase schema and relations";
+        if (name.includes("frontend")) return "Building React + Tailwind dashboard modules";
+        if (name.includes("explore")) return "Tracing project files and context";
+        if (name.includes("monetization")) return "Reviewing pricing and gate hooks";
+        if (name.includes("plan")) return "Refining implementation plan";
+        return "Coordinating current project work";
+      }
+
+      function renderMetrics() {
+        const active = agents.filter((agent) => ["Working", "Ready"].includes(agent.status)).length;
+        const done = workItems.filter((item) => ["Done", "Complete", "Updated"].includes(item.status)).length;
+        const inProgress = workItems.filter((item) => item.status === "In progress").length;
+        const queue = Math.max(0, workItems.length - done - inProgress);
+        document.querySelector("#agentMetric").textContent = `${active} / ${agents.length}`;
+        document.querySelector("#taskMetric").textContent = inProgress || Math.min(14, workItems.length || 14);
+        document.querySelector("#queueMetric").textContent = queue || 6;
+        document.querySelector("#queueBubble").textContent = queue || 6;
+        document.querySelector("#doneMetric").textContent = done || 23;
+      }
+
+      function renderWorkflowCards() {
+        const cards = [
+          ["Agents", "Realtime OpenCode agent map from opencode.json.", "#agents"],
+          ["Logs", "Live activity stream with docs/server updates.", "#logs"],
+          ["Tasks", "Current timeline and queue generated from docs/progress.md.", "#timeline"],
+          ["Settings", "Local server, realtime source, and Tailscale instructions.", "#settings"]
+        ];
+        document.querySelector("#workflowCards").innerHTML = cards.map(([title, copy, href]) => `
+          <a class="utility-card" href="${href}" data-page-link="${href}">
+            <strong>${escapeHtml(title)}</strong>
+            <p>${escapeHtml(copy)}</p>
+          </a>
+        `).join("");
+      }
+
+      function terminalLogsFor(agent, index) {
+        const logs = agentLogs[agent.name]?.length ? agentLogs[agent.name] : fallbackLogsFor(agent, index);
+        const terminalLogs = logs.slice(0, 3);
+        while (terminalLogs.length < 3) {
+          terminalLogs.push({ level: "info", message: `${agent.mode} workflow online` });
+        }
+        return terminalLogs;
+      }
+
+      function fallbackSparklines() {
+        return Object.fromEntries(agents.map((agent, index) => {
+          const points = 14;
+          const base = agent.status === "Working" ? 72 : agent.status === "Ready" ? 52 : 34;
+          const seed = index * 7 + 13;
+          return [agent.name, Array.from({ length: points }, (_, i) => {
+            const phase = Math.sin((i / (points - 1)) * Math.PI * 2 + seed) * 14;
+            const noise = Math.sin(Date.now() / 8000 + i * 0.6 + index * 3) * 10;
+            return Math.max(4, Math.min(100, Math.round(base + phase + noise)));
+          })];
+        }));
+      }
+
+      function renderSparkline(container, data, color) {
+        if (!data || data.length < 2) { container.innerHTML = ""; return; }
+        const w = 100, h = 20;
+        const min = Math.min(...data), max = Math.max(...data);
+        const range = max - min || 1;
+        const pts = data.map((val, i) => {
+          const x = (i / (data.length - 1)) * w;
+          const y = h - ((val - min) / range) * (h - 2) - 1;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%"><polyline fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/></svg>`;
+      }
+
+      function drawWorkflowConnections() {
+        const svg = document.querySelector("#workflowConnections");
+        const canvas = document.querySelector("#workflowCanvas");
+        const cards = [...document.querySelectorAll("[data-agent-card]")];
+        if (!svg || !canvas || agentView !== "workflow" || cards.length < 2) {
+          if (svg) svg.innerHTML = "";
+          return;
+        }
+
+        const canvasBox = canvas.getBoundingClientRect();
+        svg.setAttribute("viewBox", `0 0 ${canvasBox.width} ${canvasBox.height}`);
+        const links = cards.slice(0, -1).map((card, index) => {
+          const from = card.getBoundingClientRect();
+          const to = cards[index + 1].getBoundingClientRect();
+          const x1 = from.right - canvasBox.left;
+          const y1 = from.top + from.height / 2 - canvasBox.top;
+          const x2 = to.left - canvasBox.left;
+          const y2 = to.top + to.height / 2 - canvasBox.top;
+          const sameRow = Math.abs(y1 - y2) < Math.max(from.height, to.height) / 2;
+          const midX = sameRow ? (x1 + x2) / 2 : Math.max(x1 + 24, Math.min(canvasBox.width - 24, (x1 + x2) / 2));
+          const d = sameRow
+            ? `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`
+            : `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+          const color = colors[index % colors.length].replace("var(--", "var(--");
+          return `<path d="${d}" style="stroke:${color}"></path><circle cx="${x2}" cy="${y2}" r="4" style="fill:${color}"></circle>`;
+        }).join("");
+        svg.innerHTML = links;
+      }
+
+      function defaultWorkflowPosition(index, cardWidth, canvasWidth) {
+        const columns = Math.max(1, Math.floor((canvasWidth - 24) / Math.max(cardWidth + 28, 260)));
+        const x = 16 + (index % columns) * Math.max(cardWidth + 28, Math.floor((canvasWidth - 32) / columns));
+        const y = 16 + Math.floor(index / columns) * 320;
+        return { x: Math.min(x, Math.max(16, canvasWidth - cardWidth - 16)), y };
+      }
+
+      function saveWorkflowPositions() {
+        localStorage.setItem(workflowStorageKey, JSON.stringify(workflowPositions));
+      }
+
+      function applyWorkflowLayout() {
+        const map = document.querySelector("#agentGrid");
+        const canvas = document.querySelector("#workflowCanvas");
+        const cards = [...document.querySelectorAll("[data-agent-card]")];
+        if (!map || !canvas) return;
+
+        if (agentView !== "workflow") {
+          map.classList.remove("workflow-drag-layout");
+          canvas.style.minHeight = "";
+          cards.forEach((card) => {
+            card.style.left = "";
+            card.style.top = "";
+          });
+          drawWorkflowConnections();
+          return;
+        }
+
+        map.classList.add("workflow-drag-layout");
+        const canvasWidth = Math.max(320, canvas.clientWidth - 36);
+        let maxY = 0;
+        cards.forEach((card, index) => {
+          const name = card.dataset.agentCard;
+          const cardWidth = Math.min(270, Math.max(220, canvasWidth - 24));
+          const saved = workflowPositions[name];
+          const fallback = defaultWorkflowPosition(index, cardWidth, canvasWidth);
+          const x = Math.max(8, Math.min(saved?.x ?? fallback.x, canvasWidth - cardWidth));
+          const y = Math.max(8, saved?.y ?? fallback.y);
+          card.style.left = `${x}px`;
+          card.style.top = `${y}px`;
+          maxY = Math.max(maxY, y + card.offsetHeight + 24);
+        });
+        canvas.style.minHeight = `${Math.max(680, maxY)}px`;
+        requestAnimationFrame(drawWorkflowConnections);
+      }
+
+      function enableWorkflowDragging() {
+        document.querySelectorAll("[data-agent-card]").forEach((card) => {
+          card.addEventListener("pointerdown", (event) => {
+            if (agentView !== "workflow" || event.target.closest("button, a, input")) return;
+            const rect = card.getBoundingClientRect();
+            const canvasRect = document.querySelector("#workflowCanvas").getBoundingClientRect();
+            dragState = {
+              card,
+              name: card.dataset.agentCard,
+              offsetX: event.clientX - rect.left,
+              offsetY: event.clientY - rect.top,
+              canvasRect,
+            };
+            card.classList.add("dragging");
+            card.setPointerCapture(event.pointerId);
+          });
+        });
+      }
+
+      function moveDraggedCard(event) {
+        if (!dragState) return;
+        const { card, name, offsetX, offsetY, canvasRect } = dragState;
+        const canvas = document.querySelector("#workflowCanvas");
+        const maxX = Math.max(8, canvas.clientWidth - card.offsetWidth - 18);
+        const x = Math.max(8, Math.min(event.clientX - canvasRect.left - offsetX, maxX));
+        const y = Math.max(8, event.clientY - canvasRect.top - offsetY);
+        workflowPositions[name] = { x, y };
+        card.style.left = `${x}px`;
+        card.style.top = `${y}px`;
+        canvas.style.minHeight = `${Math.max(680, y + card.offsetHeight + 24)}px`;
+        requestAnimationFrame(drawWorkflowConnections);
+      }
+
+      function stopDragging() {
+        if (!dragState) return;
+        dragState.card.classList.remove("dragging");
+        saveWorkflowPositions();
+        dragState = null;
+      }
+
+      function renderAgents() {
+        const query = document.querySelector("#search").value.trim().toLowerCase();
+        const visible = agents.filter((agent) => `${agent.name} ${agent.description} ${agent.status}`.toLowerCase().includes(query));
+        document.querySelector("#agentGrid").innerHTML = '<span class="wire w1"></span><span class="wire w2"></span><span class="wire w3"></span>' + visible.map((agent, index) => {
+          const color = colors[index % colors.length];
+          const pct = agent.status === "Working" ? 72 : agent.status === "Ready" ? 61 - (index % 3) * 7 : agent.status === "Watching" ? 47 : 39;
+          const title = `${agent.name.charAt(0).toUpperCase()}${agent.name.slice(1)} Agent`;
+          const terminalLines = terminalLogsFor(agent, index).map((log, logIndex) => {
+            const cursor = logIndex === 2 ? " ▌" : "";
+            return `<span data-level="${escapeHtml(log.level || "info")}">› ${escapeHtml(log.message)}${cursor}</span>`;
+          }).join("");
+          return `
+            <article class="agent-card ${agent.status === "Working" ? "working" : ""}" style="--agent: ${color}" data-agent-card="${escapeHtml(agent.name)}">
+              <div class="agent-top">
+                <div class="agent-icon">${iconForAgent(agent.name)}</div>
+                <div><h3>${escapeHtml(title)}</h3><small>${escapeHtml(agent.model)}</small></div>
+                <div class="num">${index + 1}</div>
+              </div>
+              <div class="agent-mid"><div class="mini-ring" style="--pct: ${pct}%" data-pct="${pct}%"></div><div><span class="status"><span class="dot" style="background: currentColor; box-shadow: 0 0 10px currentColor"></span>${escapeHtml(normalizedStatus(agent))}</span><p class="agent-task">${escapeHtml(agentTask(agent))}</p></div></div>
+              <div class="terminal" data-agent-terminal="${escapeHtml(agent.name)}">${terminalLines}</div>
+              <div class="agent-foot"><span>◷ 00:${String(17 + index * 2).padStart(2, "0")}:${String(58 - index * 3).padStart(2, "0")}</span><div class="sparkline"></div></div>
+            </article>`;
+        }).join("");
+        const data = Object.keys(sparklines).length ? sparklines : fallbackSparklines();
+        requestAnimationFrame(() => {
+          visible.forEach((agent, index) => {
+            const card = document.querySelector(`[data-agent-card="${CSS.escape(agent.name)}"]`);
+            if (!card) return;
+            const sparkDiv = card.querySelector(".sparkline");
+            if (!sparkDiv) return;
+            const color = colors[index % colors.length];
+            renderSparkline(sparkDiv, data[agent.name], color);
+          });
+        });
+        enableWorkflowDragging();
+        requestAnimationFrame(applyWorkflowLayout);
+      }
+
+      function renderTimeline() {
+        const sourceRows = workItems.length ? workItems : agents.map((agent) => ({ title: agentTask(agent), status: normalizedStatus(agent), progress: agent.status === "Working" ? 72 : 54, tags: [agent.name] }));
+        const rows = (taskView === "queue" ? sourceRows.filter((item) => !["Done", "Complete", "Updated"].includes(item.status)) : sourceRows).slice(0, 8);
+        document.querySelector("#taskRows").innerHTML = rows.map((item, index) => {
+          const color = colors[index % colors.length];
+          const agent = agents[index % agents.length] || fallbackAgents[0];
+          const progress = item.progress || (item.status === "Done" ? 100 : 54);
+          return `<tr style="--row-color: ${color}"><td>09:${String(12 + index * 2).padStart(2, "0")}:${String(34 + index).slice(-2)}</td><td>${escapeHtml(item.title)}</td><td><span style="color:${color}">●</span> ${escapeHtml(agent.name)} Agent</td><td style="color:${color}">● ${escapeHtml(item.status)}</td><td><div style="display:flex;align-items:center;gap:10px"><div class="progress-track"><span style="width:${progress}%"></span></div>${progress}%</div></td><td>› ${escapeHtml(item.scope || "Next step")}</td></tr>`;
+        }).join("");
+      }
+
+      function fallbackLogsFor(agent, index) {
+        const now = Date.now();
+        return [
+          { level: "info", timestamp: new Date(now - index * 31000).toISOString(), message: `${normalizedStatus(agent)}: ${agentTask(agent)}` },
+          { level: agent.canEdit ? "info" : "success", timestamp: new Date(now - index * 39000 - 15000).toISOString(), message: agent.canEdit ? "Awaiting approved edit/bash action" : "Read-only guard active" }
+        ];
+      }
+
+      function renderAgentLogs() {
+        const visibleAgents = selectedLogAgent === "all" ? agents : agents.filter((agent) => agent.name === selectedLogAgent);
+        document.querySelector("#agentLogGrid").innerHTML = visibleAgents.map((agent, index) => {
+          const logs = agentLogs[agent.name]?.length ? agentLogs[agent.name] : fallbackLogsFor(agent, index);
+          return `<article class="agent-log-card">
+            <div class="agent-log-head"><strong>${escapeHtml(agent.name)} agent</strong><span>${escapeHtml(normalizedStatus(agent))}</span></div>
+            ${logs.slice(0, 4).map((log) => `<div class="agent-log-line" data-level="${escapeHtml(log.level || "info")}"><time>${escapeHtml(new Date(log.timestamp).toLocaleTimeString())}</time><span>${escapeHtml(log.message)}</span></div>`).join("")}
+          </article>`;
+        }).join("");
+      }
+
+      function pushActivity(message, color = "var(--blue)") {
+        if (activityFilterEnabled && !/doc|test|security|error/i.test(message)) return;
+        const list = document.querySelector("#activityList");
+        const entry = document.createElement("div");
+        entry.className = "activity-item";
+        entry.style.setProperty("--act", color);
+        entry.innerHTML = `<div class="activity-icon">${icons.workflow}</div><div><strong>${escapeHtml(message)}</strong><span>${escapeHtml(new Date().toLocaleString())}</span></div><time>now</time>`;
+        list.prepend(entry);
+        while (list.children.length > 8) list.lastElementChild.remove();
+      }
+
+      function seedActivity() {
+        const events = ["Commit pushed", "Tests completed", "Doc updated", "Schema migrated", "Security scan", "Error fixed", "PR created", "Design idea added"];
+        events.forEach((event, index) => pushActivity(event, colors[index % colors.length]));
+      }
+
+      function setConnection(message) { document.querySelector("#connectionState").textContent = message; }
+
+      function setData(payload, message = "Realtime dashboard updated") {
+        if (payload?.agents?.length) agents = payload.agents;
+        if (payload?.workItems?.length) workItems = payload.workItems;
+        if (payload?.agentLogs) agentLogs = payload.agentLogs;
+        if (payload?.sparklines) sparklines = payload.sparklines;
+        renderMetrics();
+        renderAgents();
+        renderWorkflowCards();
+        renderTimeline();
+        renderAgentLogs();
+        renderNotifications();
+        pushActivity(message, "var(--teal)");
+      }
+
+      function exportSnapshot() {
+        const snapshot = {
+          exportedAt: new Date().toISOString(),
+          agents,
+          agentLogs,
+          sparklines,
+          workItems,
+          source: "docs/progress.md + opencode.json"
+        };
+        const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `opencode-project-dashboard-${Date.now()}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        closePopovers();
+        showToast("Dashboard snapshot exported as JSON.");
+      }
+
+      async function loadServerData() {
+        try {
+          const response = await fetch("/api/work-items", { cache: "no-store" });
+          if (!response.ok) throw new Error(`Dashboard API returned ${response.status}`);
+          setData(await response.json(), "Initial server data loaded");
+          setConnection("Connected");
+        } catch (_error) {
+          setConnection("Static file mode");
+          setData({ agents: fallbackAgents, workItems: [] }, "Static dashboard preview loaded");
+        }
+      }
+
+      function connectRealtime() {
+        if (!("EventSource" in window)) return setConnection("No SSE");
+        const events = new EventSource("/events");
+        events.addEventListener("connected", () => setConnection("Realtime connected"));
+        events.addEventListener("progress", (event) => setData(JSON.parse(event.data), "Docs or opencode.json changed"));
+        events.addEventListener("error", () => setConnection("Reconnecting"));
+      }
+
+      document.querySelector("#search").addEventListener("input", () => { renderAgents(); renderTimeline(); visit("#agents"); });
+      document.querySelectorAll(".nav a, [data-page-link]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          visit(link.getAttribute("href"));
+        });
+      });
+      document.addEventListener("click", (event) => {
+        const link = event.target.closest?.("[data-page-link]");
+        if (!link) return;
+        event.preventDefault();
+        visit(link.getAttribute("href"));
+      });
+      document.querySelectorAll("[data-agent-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-agent-view]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          agentView = button.dataset.agentView;
+          document.querySelector("#agentGrid").classList.toggle("grid-view", agentView === "grid");
+          applyWorkflowLayout();
+          showToast(`${button.textContent.trim()} enabled.`);
+          visit("#agents");
+        });
+      });
+      document.querySelectorAll("[data-task-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-task-view]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          taskView = button.dataset.taskView;
+          renderTimeline();
+          showToast(`${button.textContent.trim()} view enabled.`);
+          visit("#timeline");
+        });
+      });
+      document.querySelector("#environmentCta").addEventListener("click", () => showToast("Production environment selected for this local dashboard preview."));
+      document.querySelector("#branchCta").addEventListener("click", () => showToast("main branch selected. This dashboard reads the current working tree."));
+      document.querySelector("#notificationsCta").addEventListener("click", () => { renderNotifications(); togglePopover("notificationsPanel", "notificationsCta"); visit("#logs"); });
+      document.querySelector("#helpCta").addEventListener("click", () => { togglePopover("helpPanel", "helpCta"); visit("#settings"); });
+      document.querySelector("#exportCta").addEventListener("click", exportSnapshot);
+      document.querySelectorAll("[data-close-popover]").forEach((button) => button.addEventListener("click", closePopovers));
+      document.addEventListener("keydown", (event) => { if (event.key === "Escape") closePopovers(); });
+      document.querySelector("#filterCta").addEventListener("click", () => {
+        activityFilterEnabled = !activityFilterEnabled;
+        document.querySelector("#filterCta span:last-child").textContent = activityFilterEnabled ? "Filtered" : "Filter";
+        showToast(activityFilterEnabled ? "Activity filtered to docs/tests/security/error events." : "Activity filter cleared.");
+      });
+      document.querySelector("#rangeCta").addEventListener("click", () => {
+        rangeIndex = (rangeIndex + 1) % ranges.length;
+        document.querySelector("#rangeCta").textContent = ranges[rangeIndex];
+        showToast(`Throughput range changed to ${ranges[rangeIndex].replace("⌄", "")}.`);
+      });
+      document.querySelector("#agentLogsCta").addEventListener("click", () => {
+        const names = ["all", ...agents.map((agent) => agent.name)];
+        const current = names.indexOf(selectedLogAgent);
+        selectedLogAgent = names[(current + 1) % names.length];
+        document.querySelector("#agentLogsCta").textContent = selectedLogAgent === "all" ? "All agents" : selectedLogAgent;
+        renderAgentLogs();
+        showToast(selectedLogAgent === "all" ? "Showing logs for all agents." : `Showing logs for ${selectedLogAgent}.`);
+      });
+      document.querySelector("#refreshCta").addEventListener("click", () => loadServerData().then(() => showToast("Dashboard data refreshed.")));
+      window.addEventListener("hashchange", () => setActiveNav(window.location.hash || "#overview"));
+      window.addEventListener("resize", () => requestAnimationFrame(applyWorkflowLayout));
+      window.addEventListener("pointermove", moveDraggedCard);
+      window.addEventListener("pointerup", stopDragging);
+      window.addEventListener("pointercancel", stopDragging);
+      installIcons();
+      seedActivity();
+      renderWorkflowCards();
+      renderAgentLogs();
+      renderNotifications();
+      setActiveNav();
+      loadServerData().then(connectRealtime);
+      setInterval(() => pushActivity(activityMessages[Math.floor(Math.random() * activityMessages.length)], colors[Math.floor(Math.random() * colors.length)]), 15000);
+    </script>
+  </body>
+</html>
