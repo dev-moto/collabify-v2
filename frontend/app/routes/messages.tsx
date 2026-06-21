@@ -1,6 +1,217 @@
+import { useEffect, useState, useMemo } from "react";
 import { Paperclip, Send } from "lucide-react";
-import { AppShell, Badge, Button, Card, ProtectedRoute } from "~/components/ui";
-import { conversations } from "~/data/mock";
+import { AppShell, Badge, Button, Card, ProtectedRoute, StatusPanel } from "~/components/ui";
+import { useAppSelector } from "~/store/hooks";
+import { listConversations, getMessages, sendMessage, type ConversationWithMeta, type Message, type ParticipantProfile } from "~/services/messagesService";
 
 export function meta() { return [{ title: "Messages | Collabify" }]; }
-export default function Messages() { const active = conversations[0]; return <ProtectedRoute><AppShell title="Messages" description="Realtime-ready conversation layout. Threads and private deal notes remain participant-only under RLS."><div className="grid min-h-[620px] gap-6 lg:grid-cols-[340px_1fr]"><Card><h2 className="text-xl font-black">Conversations</h2><div className="mt-4 grid gap-2">{conversations.map((c) => <button key={c.name} className="rounded-2xl p-3 text-left hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:hover:bg-white/10"><div className="flex justify-between gap-2"><b>{c.name}</b>{c.unread > 0 && <Badge tone="cyan">{c.unread}</Badge>}</div><p className="truncate text-sm text-slate-600 dark:text-slate-300">{c.preview}</p><span className="text-xs text-slate-500">{c.safe}</span></button>)}</div></Card><Card className="flex flex-col"><div className="border-b border-slate-200 pb-4 dark:border-white/10"><h2 className="text-xl font-black">{active.name}</h2><Badge tone="green">Participant-only</Badge></div><div className="flex-1 space-y-3 py-5"><p className="max-w-md rounded-2xl bg-slate-100 p-4 text-sm dark:bg-white/10">Can we confirm deliverable dates?</p><p className="ml-auto max-w-md rounded-2xl bg-cyan-600 p-4 text-sm text-white">Yes, I can send the final posting schedule today.</p></div><form className="flex gap-2" noValidate><button type="button" aria-label="Attach file" className="rounded-full p-3 focus:outline-none focus:ring-2 focus:ring-cyan-400"><Paperclip className="h-5 w-5" /></button><input aria-label="Message" className="min-w-0 flex-1 rounded-full border border-slate-200 px-4 py-3 dark:border-white/10 dark:bg-white/10" placeholder="Write a text message or paste a safe link" /><Button type="button"><Send className="h-4 w-4" /> Send</Button></form><p className="mt-2 text-xs text-slate-500">Attachments are UI-ready and must pass storage policy restrictions before upload.</p></Card></div></AppShell></ProtectedRoute>; }
+
+/** Return display name for the "other" participant(s) in a conversation,
+ *  excluding the current user. */
+function otherParticipants(participants: ParticipantProfile[], currentUserId?: string): string {
+  const others = participants.filter((p) => p.user_id !== currentUserId);
+  if (others.length === 0) return "You";
+  return others.map((p) => p.display_name).join(", ");
+}
+
+/** Look up a participant's display name by user_id, falling back to "Unknown". */
+function participantName(participants: ParticipantProfile[], userId: string): string {
+  return participants.find((p) => p.user_id === userId)?.display_name ?? "Unknown";
+}
+
+export default function Messages() {
+  const currentUserId = useAppSelector((state) => state.session.user?.id);
+
+  const [conversations, setConversations] = useState<ConversationWithMeta[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newBody, setNewBody] = useState("");
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [error, setError] = useState("");
+  const [messagesStatus, setMessagesStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [messagesError, setMessagesError] = useState("");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    listConversations()
+      .then((data) => {
+        setConversations(data);
+        setStatus("success");
+        if (data.length > 0) setActiveId(data[0].id);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Failed to load conversations.");
+        setStatus("error");
+      });
+  }, []);
+
+  // Load messages when active conversation changes
+  useEffect(() => {
+    if (!activeId) return;
+    setMessagesStatus("loading");
+    setMessagesError("");
+    getMessages(activeId)
+      .then((data) => {
+        setMessages(data);
+        setMessagesStatus("success");
+      })
+      .catch((err) => {
+        console.error("Failed to load messages:", err);
+        setMessagesError(err instanceof Error ? err.message : "Failed to load messages.");
+        setMessagesStatus("error");
+      });
+  }, [activeId]);
+
+  async function handleSend() {
+    if (!activeId || !newBody.trim()) return;
+    setSending(true);
+    try {
+      const msg = await sendMessage({ conversationId: activeId, body: newBody.trim() });
+      setMessages((prev) => [...prev, msg]);
+      setNewBody("");
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const activeConversation = conversations.find((c) => c.id === activeId);
+
+  // Sort conversations by last_message_at descending for the sidebar
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort(
+      (a, b) => new Date(b.last_message_at ?? b.id).getTime() - new Date(a.last_message_at ?? a.id).getTime(),
+    );
+  }, [conversations]);
+
+  return (
+    <ProtectedRoute>
+      <AppShell title="Messages" description="Realtime-ready conversation layout. Threads and private deal notes remain participant-only under RLS.">
+        {status === "loading" && <StatusPanel type="loading" title="Loading conversations" message="Please wait while we load your messages." />}
+        {status === "error" && <StatusPanel type="error" title="Failed to load" message={error} />}
+        {status === "success" && conversations.length === 0 && (
+          <StatusPanel type="empty" title="No conversations yet" message="Start a conversation with a creator or business from their profile page." />
+        )}
+        {status === "success" && conversations.length > 0 && (
+          <div className="grid min-h-[620px] gap-6 lg:grid-cols-[340px_1fr]">
+            <Card>
+              <h2 className="text-xl font-black">Conversations</h2>
+              <div className="mt-4 grid gap-2">
+                {sortedConversations.map((c) => {
+                  const title = otherParticipants(c.participants, currentUserId);
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setActiveId(c.id)}
+                      className={`rounded-2xl p-3 text-left hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:hover:bg-white/10 ${activeId === c.id ? "bg-slate-100 dark:bg-white/15" : ""}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                          {title.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <b className="truncate text-sm">{title}</b>
+                            {c.unread_count > 0 && <Badge tone="cyan">{c.unread_count}</Badge>}
+                          </div>
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            {c.last_message ?? "No messages yet"}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+
+            <Card className="flex flex-col">
+              {activeConversation ? (
+                <>
+                  <div className="border-b border-slate-200 pb-4 dark:border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                        {otherParticipants(activeConversation.participants, currentUserId).charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-black">
+                          {otherParticipants(activeConversation.participants, currentUserId)}
+                        </h2>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Badge tone="green">Participant-only</Badge>
+                          <span>{activeConversation.participants.length} participant{activeConversation.participants.length !== 1 ? "s" : ""}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-4 py-5">
+                    {messagesStatus === "loading" && (
+                      <StatusPanel type="loading" title="Loading messages" message="Fetching conversation history." />
+                    )}
+                    {messagesStatus === "error" && (
+                      <StatusPanel type="error" title="Failed to load messages" message={messagesError} />
+                    )}
+                    {messagesStatus === "success" && messages.length === 0 && (
+                      <p className="text-center text-sm text-slate-500">No messages yet. Send one to start the conversation.</p>
+                    )}
+                    {messagesStatus === "success" && messages.map((msg) => {
+                      const isMine = msg.sender_id === currentUserId;
+                      return (
+                        <div key={msg.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                          <span className="mb-1 px-1 text-xs text-slate-400">
+                            {isMine ? "You" : participantName(activeConversation.participants, msg.sender_id)}
+                          </span>
+                          <p
+                            className={`max-w-md rounded-2xl p-4 text-sm ${
+                              isMine
+                                ? "bg-cyan-600 text-white"
+                                : "bg-slate-100 dark:bg-white/10"
+                            }`}
+                          >
+                            {msg.body}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <form
+                    className="flex gap-2"
+                    noValidate
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSend();
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Attach file"
+                      className="rounded-full p-3 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </button>
+                    <input
+                      aria-label="Message"
+                      className="min-w-0 flex-1 rounded-full border border-slate-200 px-4 py-3 dark:border-white/10 dark:bg-white/10"
+                      placeholder="Write a text message or paste a safe link"
+                      value={newBody}
+                      onChange={(e) => setNewBody(e.currentTarget.value ?? "")}
+                    />
+                    <Button type="submit" disabled={sending || !newBody.trim()}>
+                      <Send className="h-4 w-4" /> {sending ? "Sending..." : "Send"}
+                    </Button>
+                  </form>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Attachments are UI-ready and must pass storage policy restrictions before upload.
+                  </p>
+                </>
+              ) : (
+                <StatusPanel type="empty" title="Select a conversation" message="Choose a conversation from the list to view messages." />
+              )}
+            </Card>
+          </div>
+        )}
+      </AppShell>
+    </ProtectedRoute>
+  );
+}
